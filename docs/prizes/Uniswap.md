@@ -28,4 +28,30 @@ Resources
 https://developers.uniswap.org/docs
 https://github.com/Uniswap/uniswap-ai
 
+---
+
+## 日本語訳
+
+### Uniswap Foundation — $5,000
+
+#### 概要
+Uniswap プロトコルは、Ethereum および他のサポートされるブロックチェーン上で価値をオンチェーンで swap する、最大の分散型取引プロトコルの 1 つ。Uniswap エコシステムは、v2、v3、v4 などのスマートコントラクト、開発者ツール、API、Unichain のような新興インフラを含む、オンチェーンファイナンスのフルスタックプラットフォームに進化している。これにより、開発者は共有されたパーミッションレスな流動性の上にアプリケーションを構築できる。
+
+### 賞金トラック
+
+#### 🦄 Best Uniswap API integration — $5,000
+- 1 位: $2,500
+- 2 位: $1,500
+- 3 位: $1,000
+
+Uniswap で agentic finance の未来を構築する。Uniswap API を統合し、agent に透明性、コンポーザビリティ、実際の実行で価値をオンチェーンで swap・決済する能力を与える。トレードする agent、他の agent と協調する agent、我々がまだ想像していないプリミティブを発明する agent、見たい。
+
+##### 資格要件
+すべての応募に以下が必要:
+- 賞金資格に必要な FEEDBACK.md ファイルをリポジトリのルートに置く。Uniswap API と Developer Platform でのビルダー体験について全部教えてほしい: 何が機能した、何が機能しなかった、ぶつかったバグ、ドキュメントのギャップ、DX 摩擦、欠けているエンドポイント、何が欲しかったか。
+
+### リソース
+- https://developers.uniswap.org/docs
+- https://github.com/Uniswap/uniswap-ai
+
 
