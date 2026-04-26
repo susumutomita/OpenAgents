@@ -11,6 +11,14 @@ export const SLOT_CAPSULES = [
 
 export const MOAI_IDS = ['aegis', 'razor', 'oracle', 'comet', 'hive'] as const;
 
+export const TOOLS = [
+  'axl-messaging',
+  'market-scanner',
+  'uniswap-router',
+  'circuit-breaker',
+  'peer-orchestrator',
+] as const;
+
 export const MOAI_SPECIALTIES = {
   aegis: 'shield',
   razor: 'laser',

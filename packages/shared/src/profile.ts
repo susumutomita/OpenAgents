@@ -1,11 +1,6 @@
+import { clamp } from './math';
 import { MOAI_IDS, SLOT_CAPSULES } from './powerups';
-import type {
-  AgentProfile,
-  Capsule,
-  MoaiId,
-  PlayEvent,
-  PlayLog,
-} from './types';
+import type { AgentProfile, PlayEvent, PlayLog } from './types';
 
 const BASELINE_PROFILE = {
   attack: 18,
@@ -14,10 +9,6 @@ const BASELINE_PROFILE = {
   agility: 18,
   cooperation: 12,
 } as const;
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
 
 function countEvents<T extends PlayEvent['kind']>(
   events: PlayEvent[],
@@ -28,40 +19,22 @@ function countEvents<T extends PlayEvent['kind']>(
   );
 }
 
-function countCapsules(events: PlayEvent[], kind: 'capsule' | 'commit') {
-  const counts: Record<Capsule, number> = {
-    speed: 0,
-    missile: 0,
-    double: 0,
-    laser: 0,
-    option: 0,
-    shield: 0,
-  };
+function tally<V extends string>(
+  events: PlayEvent[],
+  values: readonly V[],
+  predicate: (event: PlayEvent, value: V) => boolean
+): Record<V, number> {
+  const counts = Object.fromEntries(
+    values.map((value) => [value, 0])
+  ) as Record<V, number>;
 
-  for (const capsule of SLOT_CAPSULES) {
-    counts[capsule] = events.filter(
-      (event): event is Extract<PlayEvent, { kind: typeof kind }> =>
-        event.kind === kind && event.capsule === capsule
-    ).length;
-  }
-
-  return counts;
-}
-
-function countMoaiKills(events: PlayEvent[]) {
-  const counts: Record<MoaiId, number> = {
-    aegis: 0,
-    razor: 0,
-    oracle: 0,
-    comet: 0,
-    hive: 0,
-  };
-
-  for (const moaiId of MOAI_IDS) {
-    counts[moaiId] = events.filter(
-      (event): event is Extract<PlayEvent, { kind: 'moaiKill' }> =>
-        event.kind === 'moaiKill' && event.moaiId === moaiId
-    ).length;
+  for (const event of events) {
+    for (const value of values) {
+      if (predicate(event, value)) {
+        counts[value] += 1;
+        break;
+      }
+    }
   }
 
   return counts;
@@ -71,9 +44,21 @@ export function mapPlayLogToProfile(playLog: PlayLog): AgentProfile {
   const shootEvents = countEvents(playLog.events, 'shoot');
   const passEvents = countEvents(playLog.events, 'pass');
   const hitEvents = countEvents(playLog.events, 'hit');
-  const capsuleCounts = countCapsules(playLog.events, 'capsule');
-  const commitCounts = countCapsules(playLog.events, 'commit');
-  const moaiKills = countMoaiKills(playLog.events);
+  const capsuleCounts = tally(
+    playLog.events,
+    SLOT_CAPSULES,
+    (event, capsule) => event.kind === 'capsule' && event.capsule === capsule
+  );
+  const commitCounts = tally(
+    playLog.events,
+    SLOT_CAPSULES,
+    (event, capsule) => event.kind === 'commit' && event.capsule === capsule
+  );
+  const moaiKills = tally(
+    playLog.events,
+    MOAI_IDS,
+    (event, moaiId) => event.kind === 'moaiKill' && event.moaiId === moaiId
+  );
   const uniqueCommitCount = SLOT_CAPSULES.filter(
     (capsule) => commitCounts[capsule] > 0
   ).length;

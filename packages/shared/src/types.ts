@@ -1,8 +1,10 @@
-import type { MOAI_IDS, SLOT_CAPSULES } from './powerups';
+import type { MOAI_IDS, SLOT_CAPSULES, TOOLS } from './powerups';
 
 export type Capsule = (typeof SLOT_CAPSULES)[number];
 
 export type MoaiId = (typeof MOAI_IDS)[number];
+
+export type Tool = (typeof TOOLS)[number];
 
 export type PlayEvent =
   | { kind: 'shoot'; t: number; enemyId: string; tradeoffLabel: string }
@@ -32,7 +34,7 @@ export interface AgentProfile {
 export type ExecutionMode = 'defensive' | 'balanced' | 'aggressive' | 'swarm';
 
 export interface AgentPolicy {
-  toolsAllowed: string[];
+  toolsAllowed: Tool[];
   swarmEnabled: boolean;
   maxConcurrentAgents: number;
   executionMode: ExecutionMode;

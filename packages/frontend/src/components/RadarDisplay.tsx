@@ -1,4 +1,5 @@
 import type { AgentProfile } from '@openagents/shared/browser';
+import { useMemo } from 'react';
 import { buildRadarAxisPoints, buildRadarPolygonPoints } from '../game/radar';
 
 const AXIS_LABELS = {
@@ -9,12 +10,28 @@ const AXIS_LABELS = {
   cooperation: 'Co-op',
 } as const;
 
+const RING_LEVELS = [1, 2, 3, 4, 5] as const;
+const SIZE = 260;
+const RADIUS = 110;
+const CENTER = SIZE / 2;
+
+const RING_POINTS = RING_LEVELS.map((ring) => {
+  const ringRadius = (RADIUS / 5) * ring;
+  return buildRadarAxisPoints(ringRadius)
+    .map(
+      ({ x, y }) =>
+        `${CENTER - RADIUS + x.toFixed(1)},${CENTER - RADIUS + y.toFixed(1)}`
+    )
+    .join(' ');
+});
+
+const AXIS_POINTS = buildRadarAxisPoints(RADIUS);
+
 export function RadarDisplay({ profile }: { profile: AgentProfile }) {
-  const size = 260;
-  const radius = 110;
-  const center = size / 2;
-  const polygonPoints = buildRadarPolygonPoints(profile, radius);
-  const axes = buildRadarAxisPoints(radius);
+  const polygonPoints = useMemo(
+    () => buildRadarPolygonPoints(profile, RADIUS),
+    [profile]
+  );
 
   return (
     <section className="panel radar-panel">
@@ -27,31 +44,27 @@ export function RadarDisplay({ profile }: { profile: AgentProfile }) {
         <strong>{profile.combatPower.toLocaleString()}</strong>
       </div>
       <svg
-        viewBox={`0 0 ${size} ${size}`}
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="radar-svg"
         role="img"
         aria-label="Agent radar chart"
       >
-        {[1, 2, 3, 4, 5].map((ring) => {
-          const ringRadius = (radius / 5) * ring;
-          const points = buildRadarAxisPoints(ringRadius)
-            .map(
-              ({ x, y }) =>
-                `${center - radius + x.toFixed(1)},${center - radius + y.toFixed(1)}`
-            )
-            .join(' ');
-
-          return <polygon key={ring} points={points} className="radar-ring" />;
-        })}
-        {axes.map(({ axis, x, y }) => {
-          const adjustedX = center - radius + x;
-          const adjustedY = center - radius + y;
+        {RING_POINTS.map((points, index) => (
+          <polygon
+            key={RING_LEVELS[index]}
+            points={points}
+            className="radar-ring"
+          />
+        ))}
+        {AXIS_POINTS.map(({ axis, x, y }) => {
+          const adjustedX = CENTER - RADIUS + x;
+          const adjustedY = CENTER - RADIUS + y;
 
           return (
             <g key={axis}>
               <line
-                x1={center}
-                y1={center}
+                x1={CENTER}
+                y1={CENTER}
                 x2={adjustedX}
                 y2={adjustedY}
                 className="radar-axis"
@@ -67,7 +80,7 @@ export function RadarDisplay({ profile }: { profile: AgentProfile }) {
             .split(' ')
             .map((point) => {
               const [x, y] = point.split(',');
-              return `${Number(x) + center - radius},${Number(y) + center - radius}`;
+              return `${Number(x) + CENTER - RADIUS},${Number(y) + CENTER - RADIUS}`;
             })
             .join(' ')}
           className="radar-shape"

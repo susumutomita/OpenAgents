@@ -1,13 +1,5 @@
-import type { AgentPolicy, AgentProfile, ExecutionMode } from './types';
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function round(value: number, fractionDigits: number) {
-  const multiplier = 10 ** fractionDigits;
-  return Math.round(value * multiplier) / multiplier;
-}
+import { clamp, round } from './math';
+import type { AgentPolicy, AgentProfile, ExecutionMode, Tool } from './types';
 
 function resolveExecutionMode(profile: AgentProfile): ExecutionMode {
   if (profile.cooperation >= 60) {
@@ -22,8 +14,14 @@ function resolveExecutionMode(profile: AgentProfile): ExecutionMode {
   return 'balanced';
 }
 
+function resolveMaxConcurrentAgents(cooperation: number) {
+  if (cooperation >= 70) return 3;
+  if (cooperation >= 50) return 2;
+  return 1;
+}
+
 export function mapProfileToPolicy(profile: AgentProfile): AgentPolicy {
-  const toolsAllowed = ['axl-messaging'];
+  const toolsAllowed: Tool[] = ['axl-messaging'];
 
   if (profile.intelligence >= 42) {
     toolsAllowed.push('market-scanner');
@@ -39,8 +37,7 @@ export function mapProfileToPolicy(profile: AgentProfile): AgentPolicy {
   }
 
   const executionMode = resolveExecutionMode(profile);
-  const maxConcurrentAgents =
-    profile.cooperation >= 70 ? 3 : profile.cooperation >= 50 ? 2 : 1;
+  const maxConcurrentAgents = resolveMaxConcurrentAgents(profile.cooperation);
 
   return {
     toolsAllowed,

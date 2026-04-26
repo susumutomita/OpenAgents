@@ -110,12 +110,10 @@ export function createApp(
       return context.json({ error: 'Invalid birth payload.' }, 400);
     }
 
-    const storedBirth =
-      (await repository.findBySessionId(parsed.playLog.sessionId)) ??
-      (await repository.save({
-        ...createAgentBirthDraft(parsed.playerName, parsed.playLog),
-        createdAt: new Date().toISOString(),
-      }));
+    const storedBirth = await repository.save({
+      ...createAgentBirthDraft(parsed.playerName, parsed.playLog),
+      createdAt: new Date().toISOString(),
+    });
 
     return context.json(storedBirth, 201);
   });
