@@ -139,6 +139,106 @@ button {
 
 .arcade-panel {
   margin-bottom: 24px;
+  padding: 24px;
+}
+
+.arcade-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.arcade-controls-top {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hint-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid rgba(64, 224, 240, 0.32);
+  border-radius: 999px;
+  background: rgba(64, 224, 240, 0.06);
+  font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.86);
+}
+
+.hint-pill .hint-key {
+  color: #40e0f0;
+}
+
+.hint-pill .hint-act {
+  color: rgba(254, 250, 224, 0.7);
+}
+
+.chain-pill {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+
+.chain-pill label {
+  color: rgba(254, 250, 224, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.chain-pill select {
+  background: transparent;
+  color: #fefae0;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.chain-pill select option {
+  background: #081420;
+  color: #fefae0;
+}
+
+.arcade-status {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.arcade-status div {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 4px;
+}
+
+.arcade-status span {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.55);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.arcade-status strong {
+  font-size: 1rem;
+  color: #fefae0;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
 }
 
 .arcade-stage {
@@ -256,8 +356,231 @@ button {
 }
 
 .arcade-debrief .arcade-card {
+  text-align: left;
+  border-color: rgba(64, 224, 240, 0.4);
+  max-width: 640px;
+  width: 92%;
+}
+
+.arcade-debrief .debrief-card {
+  display: grid;
+  gap: 14px;
+}
+
+.debrief-header {
+  display: grid;
+  gap: 4px;
+}
+
+.debrief-header .debrief-eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: inherit;
+  opacity: 0.72;
+}
+
+.debrief-header h3 {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  margin: 0;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.debrief-header p {
+  margin: 0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.7);
+}
+
+.alloc-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.alloc-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  align-items: center;
+  gap: 10px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+}
+
+.alloc-asset {
+  letter-spacing: 0.1em;
+  color: rgba(254, 250, 224, 0.86);
+}
+
+.alloc-bar {
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.alloc-fill {
+  height: 100%;
+}
+
+.alloc-weight {
+  text-align: right;
+  color: rgba(254, 250, 224, 0.86);
+}
+
+.trade-feed {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.trade-feed-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.6);
+}
+
+.trade-feed ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.trade-feed li {
+  display: grid;
+  grid-template-columns: 50px 76px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+}
+
+.trade-feed .trade-time {
+  color: rgba(254, 250, 224, 0.5);
+}
+
+.trade-feed .trade-pair {
+  color: #cdebff;
+  letter-spacing: 0.08em;
+}
+
+.trade-feed .trade-amount {
+  color: rgba(254, 250, 224, 0.7);
+}
+
+.trade-feed .trade-pct {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.debrief-hint {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.6);
   text-align: center;
-  border-color: rgba(128, 237, 153, 0.4);
+}
+
+.title-card {
+  display: grid;
+  gap: 12px;
+}
+
+.title-eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #40e0f0;
+}
+
+.archetype-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.archetype-chip {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.archetype-chip span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: #fefae0;
+}
+
+.archetype-chip small {
+  font-size: 10px;
+  color: rgba(254, 250, 224, 0.6);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.archetype-panel {
+  display: grid;
+  gap: 14px;
+  border-width: 2px;
+}
+
+.archetype-panel .panel-header h2 {
+  font-size: clamp(1.4rem, 3.5vw, 2.4rem);
+  letter-spacing: -0.02em;
+}
+
+.archetype-panel .panel-header p {
+  margin: 4px 0 0;
+  color: rgba(254, 250, 224, 0.74);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero-y {
+  color: #ffd166;
+}
+
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(
+    180deg,
+    transparent 60%,
+    rgba(255, 209, 102, 0.36) 60%
+  );
+  padding: 0 4px;
+}
+
+.hero-bullets {
+  margin: 18px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: rgba(254, 250, 224, 0.78);
+}
+
+.hero-card .muted {
+  color: rgba(254, 250, 224, 0.55);
+  font-size: 0.84rem;
 }
 
 .arcade-summary {

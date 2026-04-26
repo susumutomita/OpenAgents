@@ -15,15 +15,15 @@ const basePlayLog: PlayLog = {
   ],
 };
 
-describe('deriveWalletFromPlayLog', () => {
-  it('同じプレイログなら同じ wallet を返す', () => {
-    expect(deriveWalletFromPlayLog(basePlayLog)).toEqual(
-      deriveWalletFromPlayLog(basePlayLog)
-    );
+describe('プレイログからウォレットを導出する', () => {
+  it('同じプレイログなら同じ wallet を返す', async () => {
+    const a = await deriveWalletFromPlayLog(basePlayLog);
+    const b = await deriveWalletFromPlayLog(basePlayLog);
+    expect(a).toEqual(b);
   });
 
-  it('プレイヤー名から ENS 名と tokenId を組み立てる', () => {
-    const draft = createAgentBirthDraft('Kotetsu Pilot', basePlayLog);
+  it('プレイヤー名から ENS 名と tokenId を組み立てる', async () => {
+    const draft = await createAgentBirthDraft('Kotetsu Pilot', basePlayLog);
 
     expect(draft.agent.ensName).toStartWith('kotetsu-pilot-');
     expect(Number(draft.agent.tokenId)).toBeGreaterThan(0);

@@ -60,3 +60,21 @@ before-commit: architecture_harness lint_text lint typecheck test build
 .PHONY: dev
 dev:
 	bun run dev
+
+# Multi-chain contract deploy (Foundry).
+# Set PRIVATE_KEY plus the matching *_RPC_URL for each network you target.
+# Example: make deploy NETWORK=sepolia
+.PHONY: deploy
+deploy:
+	cd contracts && forge script script/Deploy.s.sol:Deploy \
+		--rpc-url $(or $(RPC_URL),$$($(shell echo $(NETWORK) | tr a-z A-Z)_RPC_URL)) \
+		--broadcast \
+		--verify \
+		--chain $(NETWORK)
+
+.PHONY: deploy_all
+deploy_all:
+	@for network in sepolia base_sepolia op_sepolia arbitrum_sepolia; do \
+		echo "▶ deploying to $$network"; \
+		$(MAKE) deploy NETWORK=$$network || exit 1; \
+	done
