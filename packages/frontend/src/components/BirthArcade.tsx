@@ -9,7 +9,6 @@ import {
   ARCHETYPE_LABEL,
   type Archetype,
   CAPABILITY_COLOR,
-  CAPABILITY_DESC,
   CAPABILITY_LABEL,
   CAPABILITY_ORDER,
   type InputState,
@@ -22,13 +21,7 @@ import {
   simulateTrades,
   step as stepRuntime,
 } from '../game/runtime';
-import {
-  MOAI,
-  MOAI_KEY,
-  VIC_KEY,
-  VIC_VIPER,
-  drawSprite,
-} from '../game/sprites';
+import { VIC_KEY, VIC_VIPER, drawSprite } from '../game/sprites';
 
 interface BirthArcadeProps {
   disabled?: boolean;
@@ -38,6 +31,14 @@ interface BirthArcadeProps {
 type Phase = 'idle' | 'play' | 'debrief';
 
 const SCALE = 3;
+
+const TITLE_MODULE_DESC = {
+  shield: 'CIRCUIT',
+  speed: 'L2 FAST',
+  option: 'AXL PEER',
+  laser: '0G LOGIC',
+  missile: 'UNI ROUTE',
+} as const;
 
 export function BirthArcade({
   disabled = false,
@@ -323,9 +324,6 @@ function renderTitle(
   // Demo modules so the player sees what each target means.
   drawDemoSquadron(ctx, t);
 
-  // Moai watching
-  drawSprite(ctx, MOAI, MOAI_KEY, RW - 56, 80);
-
   // Title
   drawBigText(ctx, 'GR@DIUS', RW / 2 - 42, 30, PAL.hudYellow);
   drawBigText(ctx, ' WEB 3', RW / 2 - 42, 56, PAL.ringCyan);
@@ -338,27 +336,33 @@ function renderTitle(
 }
 
 function drawDemoSquadron(ctx: CanvasRenderingContext2D, t: number) {
+  ctx.fillStyle = 'rgba(0, 16, 42, 0.82)';
+  ctx.fillRect(14, 112, 228, 62);
+  pixelText(ctx, 'TARGETS ARE AGENT MODULES', 42, 118, PAL.hudYellow);
+
   for (let i = 0; i < CAPABILITY_ORDER.length; i += 1) {
     const capability = CAPABILITY_ORDER[i];
     if (!capability) continue;
-    const x = 28 + i * 46 + Math.sin((t + i * 30) * 0.05) * 4;
-    const y = 122 + Math.cos((t + i * 20) * 0.05) * 7;
+    const column = i < 3 ? 0 : 1;
+    const row = i < 3 ? i : i - 3;
+    const x = 28 + column * 112;
+    const y = 134 + row * 13 + Math.sin((t + i * 30) * 0.05) * 1.5;
     ctx.fillStyle = CAPABILITY_COLOR[capability];
-    ctx.fillRect((x | 0) - 6, (y | 0) - 4, 12, 8);
+    ctx.fillRect((x | 0) - 8, (y | 0) - 2, 8, 6);
     ctx.fillStyle = '#fefae0';
-    ctx.fillRect((x | 0) - 3, (y | 0) - 2, 6, 4);
+    ctx.fillRect((x | 0) - 6, y | 0, 4, 2);
     pixelText(
       ctx,
       CAPABILITY_LABEL[capability],
-      (x | 0) - 18,
-      (y | 0) + 6,
+      x | 0,
+      y | 0,
       CAPABILITY_COLOR[capability]
     );
     pixelText(
       ctx,
-      CAPABILITY_DESC[capability].slice(0, 8),
-      (x | 0) - 24,
-      (y | 0) + 14,
+      TITLE_MODULE_DESC[capability],
+      (x | 0) + 48,
+      y | 0,
       PAL.hudWhite
     );
   }

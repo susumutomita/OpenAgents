@@ -152,17 +152,19 @@ button {
 
 .arcade-press-start {
   position: absolute;
-  inset: 0;
-  margin: auto;
+  right: 0;
+  bottom: 26px;
+  left: 0;
+  margin: 0 auto;
   width: max-content;
   height: max-content;
-  padding: 14px 28px;
+  padding: 10px 20px;
   border-radius: 999px;
   background: rgba(255, 209, 102, 0.92);
   color: #04060f;
   font-family: "JetBrains Mono", monospace;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   border: 2px solid #fff;
   cursor: pointer;
