@@ -65,12 +65,18 @@ export const ARCHETYPE_GLYPH: Record<Archetype, string> = {
   aggressive: 'RISK',
 };
 
-// Enemies are color-coded by archetype. Killing one increases that archetype's score.
+// Enemies are color-coded by archetype. Each color has its own behavior +
+// reward + risk profile. The KEY GAME DESIGN INSIGHT: shooting RISK enemies
+// hurts you (they fire back). So "shoot everything" is mathematically wrong.
+// You can't survive 60s of RISK shots. You have to choose your style.
 interface EnemyColor {
   archetype: Archetype;
   color: string;
   flashColor: string;
   spriteKey: SpriteKey;
+  scoreOnKill: number;
+  // 0 = passive, 1 = sine wave, sometimes shoots, 2 = aggressive shooter
+  aggression: 0 | 1 | 2;
 }
 
 const ENEMY_COLORS: readonly [EnemyColor, EnemyColor, EnemyColor] = [
@@ -78,6 +84,8 @@ const ENEMY_COLORS: readonly [EnemyColor, EnemyColor, EnemyColor] = [
     archetype: 'conservative',
     color: '#7bdff2',
     flashColor: '#a0f8ff',
+    scoreOnKill: 50,
+    aggression: 0,
     spriteKey: {
       ...GRUNT_KEY,
       O: '#7bdff2',
@@ -90,6 +98,8 @@ const ENEMY_COLORS: readonly [EnemyColor, EnemyColor, EnemyColor] = [
     archetype: 'balanced',
     color: '#f8d840',
     flashColor: '#fff5b0',
+    scoreOnKill: 150,
+    aggression: 1,
     spriteKey: {
       ...GRUNT_KEY,
       O: '#f8d840',
@@ -102,6 +112,8 @@ const ENEMY_COLORS: readonly [EnemyColor, EnemyColor, EnemyColor] = [
     archetype: 'aggressive',
     color: '#ff5252',
     flashColor: '#ffb3b3',
+    scoreOnKill: 400,
+    aggression: 2,
     spriteKey: {
       ...GRUNT_KEY,
       O: '#ff5252',
@@ -138,6 +150,9 @@ interface Enemy {
   color: string;
   flashColor: string;
   spriteKey: SpriteKey;
+  scoreOnKill: number;
+  aggression: 0 | 1 | 2;
+  fireCool: number;
   spawnAt: number;
   isTutorial: boolean;
 }
@@ -225,6 +240,8 @@ export interface Runtime {
   finishReason: 'time' | 'hp' | null;
   showTutorialPrompt: boolean;
   spawnedTutorial: boolean;
+  tutorialStep: number;
+  nextTutorialAt: number;
   archetypePeek: Archetype;
 }
 
@@ -256,8 +273,21 @@ export function createRuntime(chain: ChainId = 'ARB'): Runtime {
     finishReason: null,
     showTutorialPrompt: true,
     spawnedTutorial: false,
+    tutorialStep: 0,
+    nextTutorialAt: 30,
     archetypePeek: 'balanced',
   };
+}
+
+function enemyAssetLabel(archetype: Archetype): string {
+  switch (archetype) {
+    case 'conservative':
+      return 'STABLE';
+    case 'balanced':
+      return 'YIELD';
+    case 'aggressive':
+      return 'MEME';
+  }
 }
 
 function elapsedMs(rt: Runtime) {
@@ -301,14 +331,18 @@ function pickEnemyColor(rt: Runtime): EnemyColor {
 }
 
 function spawnTutorialEnemy(rt: Runtime) {
-  const color = ENEMY_COLORS[0];
-  const tradeoffLabel = ARCHETYPE_GLYPH[color.archetype];
+  // First: a slow, passive BLUE — player shoots, gets +50 SAFE, learns
+  //        "shooting feels good".
+  // Then 90 frames later, a slow RED appears. Player auto-fires it,
+  //        eats a return-bullet, learns "RED bites back".
+  const slot = rt.tutorialStep;
+  const color = slot === 0 ? ENEMY_COLORS[0] : ENEMY_COLORS[2];
   rt.enemies.push({
     type: 'grunt',
-    id: `tutorial-${rt.enemyCounter}`,
+    id: `tutorial-${rt.enemyCounter}-${slot}`,
     x: RW + 16,
-    y: PLAY_H / 2 - 5,
-    vx: -0.6,
+    y: PLAY_H / 2 - 5 + (slot === 1 ? -22 : 0),
+    vx: -0.55,
     vy: 0,
     phase: 0,
     hp: 1,
@@ -316,25 +350,33 @@ function spawnTutorialEnemy(rt: Runtime) {
     color: color.color,
     flashColor: color.flashColor,
     spriteKey: color.spriteKey,
+    scoreOnKill: color.scoreOnKill,
+    aggression: color.aggression,
+    fireCool: 60,
     spawnAt: rt.t,
     isTutorial: true,
   });
   rt.enemyCounter += 1;
-  rt.spawnedTutorial = true;
-  void tradeoffLabel;
+  rt.tutorialStep += 1;
 }
 
 function spawnEnemyWave(rt: Runtime) {
+  // Each wave is a single color, so the player commits to a choice per wave.
   const colorChoice = pickEnemyColor(rt);
-  const wave = 3 + ((rt.enemyCounter * 7) % 3);
+  const wave =
+    colorChoice.aggression === 2
+      ? 2 + (rt.enemyCounter % 2) // RED waves are smaller — they're already dangerous
+      : colorChoice.aggression === 1
+        ? 3 + (rt.enemyCounter % 2)
+        : 4 + (rt.enemyCounter % 2);
   const yBase = 30 + ((rt.enemyCounter * 31) % 80);
   for (let i = 0; i < wave; i += 1) {
     rt.enemies.push({
       type: 'grunt',
       id: `g-${rt.enemyCounter}-${i}`,
-      x: RW + 16 + i * 18,
+      x: RW + 16 + i * 22,
       y: yBase + i * 14 + Math.sin(rt.t * 0.01 + i) * 4,
-      vx: -1.0,
+      vx: -1.0 - (colorChoice.aggression === 2 ? 0.4 : 0),
       vy: 0,
       phase: rt.t * 0.02 + i,
       hp: 1,
@@ -342,6 +384,9 @@ function spawnEnemyWave(rt: Runtime) {
       color: colorChoice.color,
       flashColor: colorChoice.flashColor,
       spriteKey: colorChoice.spriteKey,
+      scoreOnKill: colorChoice.scoreOnKill,
+      aggression: colorChoice.aggression,
+      fireCool: 60 + i * 18,
       spawnAt: rt.t,
       isTutorial: false,
     });
@@ -383,18 +428,22 @@ export function step(rt: Runtime, input: InputState) {
   if (rt.warningT > 0) rt.warningT -= 1;
   if (rt.flashT > 0) rt.flashT -= 1;
 
-  // Tutorial enemy first thing
-  if (!rt.spawnedTutorial && rt.t > 30) {
+  // Tutorial — Mario 1-1 sequencing:
+  //   step 0 (frame 30): a slow BLUE drifts in. Player auto-shoots → +SAFE.
+  //   step 1 (frame 30+150): a slow RED drifts in. Player auto-shoots → +RISK
+  //                          AND eats a return-bullet → understands cost.
+  if (rt.tutorialStep < 2 && rt.t >= rt.nextTutorialAt) {
     spawnTutorialEnemy(rt);
+    rt.nextTutorialAt = rt.t + 150;
+    if (rt.tutorialStep >= 2) {
+      rt.spawnedTutorial = true;
+    }
   }
+  if (rt.tutorialStep >= 2) rt.spawnedTutorial = true;
 
-  // Hide tutorial prompt after first kill or after a while
-  if (rt.spawnedTutorial && rt.score > 0) {
-    rt.showTutorialPrompt = false;
-  }
-  if (rt.t > TUTORIAL_FRAMES + 60) {
-    rt.showTutorialPrompt = false;
-  }
+  // Hide tutorial prompt once the player has visibly engaged
+  if (rt.score > 0) rt.showTutorialPrompt = false;
+  if (rt.t > TUTORIAL_FRAMES + 60) rt.showTutorialPrompt = false;
 
   // Movement (the only action the player needs to know)
   if (rt.player.iframes > 0) rt.player.iframes -= 1;
@@ -478,9 +527,9 @@ export function step(rt: Runtime, input: InputState) {
               life: 1.4,
             });
           } else {
-            // Vote for archetype
+            // Vote for archetype, score scales with risk
             rt.votes[e.archetype] += 1;
-            rt.score += 100;
+            rt.score += e.scoreOnKill;
             rt.events.push({
               kind: 'shoot',
               t: elapsedMs(rt),
@@ -491,9 +540,9 @@ export function step(rt: Runtime, input: InputState) {
             rt.scorePops.push({
               x: e.x + 4,
               y: e.y + 4,
-              text: `+1 ${ARCHETYPE_GLYPH[e.archetype]}`,
+              text: `+${e.scoreOnKill} ${ARCHETYPE_GLYPH[e.archetype]}`,
               color: e.color,
-              life: 0.9,
+              life: 1.0,
             });
           }
         }
@@ -516,12 +565,36 @@ export function step(rt: Runtime, input: InputState) {
     return true;
   });
 
-  // Enemy update
+  // Enemy update + per-color firing behavior
   for (const e of rt.enemies) {
     if (e.type === 'grunt') {
       e.x += e.vx;
-      if (!e.isTutorial) {
-        e.y += Math.sin(rt.t * 0.06 + e.phase) * 0.7;
+      // Aggression-driven bobbing: passive = straight, mid = sine, risk = chasing.
+      if (e.aggression === 1 && !e.isTutorial) {
+        e.y += Math.sin(rt.t * 0.06 + e.phase) * 0.9;
+      } else if (e.aggression === 2 && !e.isTutorial) {
+        // Risk enemies drift toward the player vertically (slow homing).
+        const dy = rt.player.y - e.y;
+        e.y += Math.sign(dy) * Math.min(Math.abs(dy), 0.55);
+      }
+      // Fire rules: passive never fires. Mid fires occasional. Risk fires fast.
+      e.fireCool -= 1;
+      if (e.aggression > 0 && e.fireCool <= 0 && e.x < RW - 8 && e.x > 8) {
+        const dx = rt.player.x - e.x;
+        const dy = rt.player.y - e.y;
+        const m = Math.hypot(dx, dy) || 1;
+        const speed = e.aggression === 2 ? 1.7 : 1.1;
+        rt.enemyBullets.push({
+          x: e.x + 4,
+          y: e.y + 4,
+          vx: (dx / m) * speed,
+          vy: (dy / m) * speed,
+          life: 240,
+        });
+        e.fireCool =
+          e.aggression === 2
+            ? 70 + Math.floor(Math.random() * 30)
+            : 180 + Math.floor(Math.random() * 80);
       }
     } else {
       if (e.x > e.targetX) e.x += e.vx;
@@ -764,6 +837,33 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
         ctx.globalAlpha = 1;
       }
       drawSprite(ctx, GRUNT, e.spriteKey, e.x | 0, e.y | 0);
+      // Floating identity label so the player learns what each color *means*.
+      // Visible for the first ~1.5s of life or while the tutorial is on.
+      const labelAge = rt.t - e.spawnAt;
+      const showLabel = labelAge < 90 || e.isTutorial;
+      if (showLabel) {
+        const alpha = e.isTutorial
+          ? 1
+          : Math.max(0, Math.min(1, (90 - labelAge) / 30));
+        ctx.globalAlpha = alpha;
+        const label = enemyAssetLabel(e.archetype);
+        const reward = `+${e.scoreOnKill}`;
+        const lx = (e.x | 0) - Math.floor((label.length * 6) / 2) + 6;
+        const ly = (e.y | 0) - 16;
+        // Background plate so the label stays readable on busy backgrounds.
+        ctx.fillStyle = 'rgba(0, 16, 42, 0.85)';
+        ctx.fillRect(lx - 2, ly - 1, label.length * 6 + 4, 9);
+        pixelText(ctx, label, lx, ly, e.color);
+        const ry = ly + 8;
+        pixelText(
+          ctx,
+          reward,
+          (e.x | 0) + 6 - Math.floor((reward.length * 6) / 2),
+          ry,
+          PAL.hudYellow
+        );
+        ctx.globalAlpha = 1;
+      }
     } else {
       const key = e.chargeT > 0 ? MOAI_CHARGE_KEY : MOAI_KEY;
       drawSprite(ctx, MOAI, key, e.x | 0, e.y | 0, false, e.fromTop);

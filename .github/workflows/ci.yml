@@ -44,6 +44,10 @@ jobs:
         env:
           npm_config_ignore_scripts: "true"
           CI: "true"
+          # Allow recently-released transitive deps. browserslist / caniuse-lite
+          # ship updates almost daily; without this flag safe-chain blocks them
+          # and the frozen-lockfile install fails.
+          EXTRA_INSTALL_FLAGS: "--safe-chain-skip-minimum-package-age"
         run: make install_ci
 
       - name: lint typecheck test build

@@ -3,30 +3,35 @@ import { PAL } from './palette';
 export type SpriteKey = Record<string, string>;
 export type Sprite = readonly string[];
 
+// Vic Viper — sharp Gradius II silhouette.
+// Hard panel breaks (no fluffy gradient highlights). Pointed nose to the right,
+// vertical tail fin on top, two swept delta wings, twin engine exhaust on left,
+// and a missile pod underneath at the rear.
 export const VIC_VIPER: Sprite = [
-  '......TT................',
-  '......TTT...............',
-  '.....TTTT...HH..........',
-  '...SSSSSS.HHCCH.........',
-  '..SSCCCCCSCCCCCCS.......',
-  '.FSCCCCCCCCCCCCCCCS.....',
-  'FFBBBBCCCCCCCCCCCCCCSS..',
-  'F2BBBCCCCCCCCCCCCCCCCCSS',
-  'FFBBBBCCCCCCCCCCCCCCSS..',
-  '.FSCCCCCCCCCCCCCCCS.....',
-  '..SSCCCCCSCCCCCCS.......',
-  '...SSSSSS...............',
-  '....RRRRRRR.............',
-  '...........R............',
+  '...........HH...........', // 0  tail tip
+  '...........HH...........', // 1  tail
+  '..........BHHB..........', // 2  tail base
+  '.......BBBBBHHCC........', // 3  tail to body / upper wing root
+  '....BBBBKKKBBHHCCCCC....', // 4  upper wing
+  '..BBKKSSSCCCCCCCCCCCC...', // 5  upper wing extending right
+  '.BBSSCCCCCCCCCCCCCCCCS..', // 6  fuselage upper / canopy line
+  'F2BBCCCCCCCCCCCCCCCCCCSS', // 7  centerline + nose forward
+  'FFBBCCCCCCCCCCCCCCCCCCCS', // 8  pointed nose tip (pointing right)
+  'F2BBCCCCCCCCCCCCCCCCCCSS', // 9  centerline + nose forward (mirror)
+  '.BBSSCCCCCCCCCCCCCCCCS..', // 10 fuselage lower
+  '..BBKKSSSCCCCCCCCCCCC...', // 11 lower wing extending right
+  '....BBBBKKKBBB.RRR......', // 12 lower wing root + missile pod
+  '...............RR.......', // 13 missile tip
 ];
 
 export const VIC_KEY: SpriteKey = {
-  C: PAL.shipBlue,
-  S: '#d8e4f4',
-  B: '#142d5e',
-  H: '#9bd0ff',
-  T: '#1a3a80',
-  R: PAL.shipRed,
+  C: '#3a7ad8', // hull main
+  S: '#9fc8ff', // panel highlight (used sparingly, leading edges only)
+  B: '#0d1e44', // hull shadow / panel break
+  H: '#5fd0ff', // cockpit / canopy glass
+  K: '#22386b', // wing inner shadow
+  T: '#0d1e44',
+  R: '#e02030', // missile body (red)
   F: PAL.shipFlame,
   '2': PAL.shipFlame2,
 };
