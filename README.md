@@ -1,169 +1,255 @@
+<div align="center">
+
 # Gr@diusWeb3
 
-> **Play to Design Agents.**
-> Konami's _Gradius III_ made **you** the hero.
-> **Gr@diusWeb3** makes your **agent** the hero.
+**Kill the tradeoffs. Play to design your AI agent.**
 
-A retro arcade shooter that doubles as the world's fastest onboarding for autonomous DeFi / web3 agents. Play 30–90 seconds, walk away with an iNFT agent whose risk profile, execution policy, wallet, and ENS identity are all fully derived from how you played.
+A 60-second retro arcade shooter that doubles as the world's fastest onboarding for autonomous on-chain AI agents. Move with arrow keys. The ship auto-fires. Whatever color of enemy you destroy most becomes your agent's archetype. **No manual. No menu. Just play.**
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](./LICENSE)
+[![Built with Bun](https://img.shields.io/badge/runtime-bun-fbf0df?logo=bun)](https://bun.sh)
+[![Stack: Vite + React + Canvas](https://img.shields.io/badge/stack-vite%20%2B%20react%20%2B%20canvas-61dafb?logo=react)](https://vitejs.dev)
+[![Contracts: Foundry](https://img.shields.io/badge/contracts-foundry-2eb6ad)](https://getfoundry.sh)
+[![Vercel-ready](https://img.shields.io/badge/deploy-vercel-000000?logo=vercel)](https://vercel.com)
+
+[**▶ Play live demo**](https://gradiusweb3.vercel.app) ·
+[**Pitch deck**](./docs/specs/image%20copy.png) ·
+[**Spec**](./docs/specs/2026-04-26-agent-forge.md) ·
+[**Sponsor prizes**](./docs/prizes/)
+
+</div>
 
 ---
 
-## The Problem
+## Why this exists
 
-AI agents on-chain are now technically possible (ERC-4337 smart accounts, x402 autonomous payments, agentic finance). But three problems block adoption:
+> Designing AI agents today is **complex, opaque, trial-and-error**. Builders click through abstract settings, hope for the best, and ship agents nobody can explain. The UX hasn't evolved past 2010-era admin panels.
 
-1. **Designing an agent is hard.** Settings screens ask for `max drawdown 5%`, `slippage 0.5%`, `position size 10%`. No one knows what those mean intuitively.
-2. **Trade-offs are invisible.** Speed vs safety, concentration vs diversification, single vs multi-agent — these are abstract until you _feel_ them.
-3. **Bots are black boxes.** Even after deployment, owners can't explain _why_ their agent does what it does. No reproducibility, no trust.
+Gr@diusWeb3 turns that workflow into a **Konami-grade pixel shooter**. Constraints become enemies. Decisions become shots. The agent that emerges is born from your reflexes — and every choice has a visible cost. **Design = decisions under tradeoffs.**
 
-## The Solution
+---
 
-**Replace the settings screen with a 30–90 second arcade game.**
+## What you get in 60 seconds of play
 
-Every choice the player makes during gameplay is also a design decision for their agent:
+- **An on-chain agent identity** (ENS subname, ERC-7857-style iNFT, deterministic seed).
+- **A real DeFi portfolio** in the agent's wallet (Conservative / Balanced / Aggressive presets, with allocations and execution policy).
+- **A persistent memory log** of how you played — reproducible, exportable, queryable.
+- **A web of integrations** (Gensyn AXL peer mesh, 0G storage/compute, Uniswap routing, KeeperHub guarantees) — surfaced through gameplay rather than config.
 
-- **Shoot or skip a labeled enemy** = pick one side of a trade-off (`Slow & Safe` vs `Fast & Risky`).
-- **Collect capsules from killed enemies** = advance the Gradius power-up bar.
-- **Press the commit button at a chosen bar position** = lock that capability into your agent.
-- **Defeat one of five Moai bosses** = release archetype-flavored capsules.
+---
 
-When the stage ends, gameplay events are deterministically hashed to:
-
-- A **wallet** (private key derived from `keccak256(playLog)`),
-- An **ENS subname** (`{playerName}.openagents.eth`),
-- An **iNFT** (ERC-7857) carrying the agent's profile,
-- A **5-axis radar** of stats (`Attack`, `Defense`, `Intelligence`, `Agility`, `Cooperation`),
-- A composite **Combat Power** number (DBZ-scouter style).
-
-The current MVP already ships the arcade, deterministic profile derivation, local birth API, ENS-style naming, wallet derivation, and an AXL-ready runtime draft. Sepolia minting, real ENS writes, and prize-network integrations are the next wiring step, not yet live in this branch.
-
-## How Gameplay Maps to Agent Design
-
-### Power-up Bar = Trade-off Queue
+## How it plays — Mario 1-1 simple
 
 ```
-[ SPEED ] [ MISSILE ] [ DOUBLE ] [ LASER ] [ OPTION ] [ ? ]
-    ↑ each capsule collected advances the highlight
-    ↑ commit button at any position locks that trait into the agent
-    ↑ multiple commits at same slot stack the trait
-    ↑ skipping = explicitly rejecting that design choice
+1. The page loads → press any key.
+2. Move with ←→↑↓ or WASD. The ship auto-fires.
+3. Three colors of enemies appear:
+     CYAN  = SAFE   (conservative votes)
+     YELLOW= MID    (balanced votes)
+     RED   = RISK   (aggressive votes)
+4. Whichever color you destroy most becomes your agent's archetype.
+5. Moai bosses occasionally descend — dodge them.
+6. After 60 seconds: stage clear. Your agent is born.
 ```
 
-| Power-up | Agent stat raised | Meaning |
-|----------|-------------------|---------|
-| **SPEED** | Agility | Fast reaction, lightweight reasoning |
-| **MISSILE** | Intelligence | External tool / API access |
-| **DOUBLE** | Attack | Multi-target generalist |
-| **LASER** | Attack | High-precision specialist |
-| **OPTION** | Cooperation | **Multi-agent / swarm** (spawns extra AXL nodes) |
-| **?** (Shield) | Defense | Safety-first, drawdown-averse |
+There is no power-up bar. No commit button. No tutorial popup. The first slow tutorial enemy teaches the entire mechanic in 2 seconds — exactly like Mario stomps his first Goomba.
 
-### Five Moai Bosses = Five Archetypes
-
-The Moai stage's iconic stone heads each represent a design archetype. Killing one biases the capsule drops toward its specialty:
-
-| Moai | Archetype | Drops |
-|------|-----------|-------|
-| 🛡 **Aegis** | Defense | Shield-heavy |
-| ⚔ **Razor** | Attack | Laser-heavy |
-| 🧠 **Oracle** | Intelligence | Missile-heavy |
-| 💨 **Comet** | Agility | Speed-heavy |
-| 🤝 **Hive** | Cooperation | Option-heavy (multi-agent) |
-
-The player chooses which Moai to engage. Skipping one = explicitly rejecting that archetype. Engaging two = a hybrid agent.
-
-## Sample Outcomes
-
-| Personality | Behavior pattern | What the agent does on-chain |
-|-------------|-----------------|------------------------------|
-| 🛡 **Defensive Agent** | Aegis killed, Shield committed often | Tight stop-loss, low position size, Aave conservative LTV |
-| ⚡ **Aggressive Swarm** | Hive + Comet, Option committed | Spawns peer agents over AXL, fast rebalances, multiple small positions |
-| 🎯 **Sharpshooter** | Razor only, Laser committed twice | One concentrated bet, high conviction, holds long |
-| 🤝 **Coordinator** | Hive + Oracle | Coordinates other peer agents, pulls in external data via Missile-class APIs |
-| 🧠 **Lone Wolf** | All bosses skipped, single Laser commit | Pure-style minimal agent, no swarm |
-
-Crucially: **every personality has a reproducible reason** (= the play log). Owners can answer "why did my agent do that?".
+---
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│  Browser (Vite + React + Canvas)                               │
-│  - BirthArcade (Gradius / Moai shooter)                        │
-│  - RadarDisplay (5-axis + Combat Power)                        │
-│  - AgentDashboard (birth feed + policy scan)                   │
-└────────────┬───────────────────────────────────────────────────┘
-             │ POST /api/birth (PlayLog)
-             ▼
-┌────────────────────────────────────────────────────────────────┐
-│  Backend (Hono + Bun)                                          │
-│   - mapPlayLogToProfile  (pure, deterministic)                 │
-│   - mapProfileToPolicy   (pure, deterministic)                 │
-│   - hash(playLog) → deterministic wallet draft                 │
-│   - JSONL persistence for birth records                        │
-│   - SSE feed for birth sequence replay                         │
-└──────┬───────────────────────┬─────────────────────────────────┘
-       │                       │
-       ▼                       ▼
-┌───────────────┐    ┌───────────────────────────────────────────┐
-│ Contract Stubs│    │ Prize Wiring (next step)                  │
-│ ERC-7857-ish  │    │ Sepolia mint / ENS subname / AXL / 0G     │
-│ ENS registry  │    │ Uniswap / KeeperHub                       │
-└───────────────┘    └───────────────────────────────────────────┘
+                ┌─────────────────────────────────────────┐
+                │  Browser (Vite + React + Canvas)        │
+                │  ─────────────────────────────────────  │
+   60s play  →  │  game/runtime.ts (pure step + render)   │
+                │  game/sprites.ts · font.ts · terrain    │
+                │  components/BirthArcade.tsx             │
+                │  components/AgentDashboard.tsx          │
+                └──────────────┬──────────────────────────┘
+                               │ in-process await
+                               ▼
+                ┌─────────────────────────────────────────┐
+                │  shared/forge.ts (deterministic, async) │
+                │  - mapPlayLogToProfile  (pure fn)       │
+                │  - mapProfileToPolicy   (pure fn)       │
+                │  - deriveWalletFromPlayLog (SubtleCrypto)│
+                │  → agent profile + policy + iNFT spec   │
+                └──────────────┬──────────────────────────┘
+                               │ optional, not in critical path
+                               ▼
+   ┌────────────┬──────────────┴─────────┬─────────────────┐
+   ▼            ▼                        ▼                 ▼
+ ENS         Gensyn AXL                0G              Uniswap +
+ subname     peer mesh                 Storage         KeeperHub
+ + records   (multi-agent)             + Compute       (execution)
+ ─────────────────────────────────────────────────────────────────
+ Multi-chain Foundry deploys: Sepolia / Base / OP / Arbitrum Sepolia
 ```
 
-## Current MVP
+The frontend is **fully self-contained**: no backend, no API server, no database. Wallet derivation runs in the browser via Web Crypto. The agent forging pipeline is a pure function. This makes the project **provably reproducible** and **trivially deployable** to any static host (Vercel pre-configured).
 
-- A playable Moai-stage arcade runs in the browser and emits a deterministic `PlayLog`.
-- `POST /api/birth` turns that log into a runtime draft with wallet, ENS-style name, policy, radar stats, and feed.
-- Birth records are persisted locally as JSONL so the API has real storage instead of in-memory stubs.
-- Solidity contract stubs for the iNFT and subname registry are included under [`contracts/`](./contracts/).
+---
 
-## Prize Integration Plan
+## Quick start
 
-- **Gensyn AXL** — the current UI already surfaces multi-node intent through `OPTION` and runtime topology. The actual multi-process AXL wiring is the next step.
-- **0G Autonomous Agents** — the deterministic profile and policy pipeline is implemented locally. 0G Storage / Compute integration is still pending.
-- **ENS** — the app already derives ENS-style names deterministically. Real subname writes and text records are still pending.
-- **Uniswap / KeeperHub** — `FEEDBACK.md` and environment slots are in place. Real swap / private-mempool execution is still pending.
-
-## Demo
-
-<!-- Upload the 2-minute demo recording and replace this comment with the embed (e.g., https://github.com/user-attachments/assets/<id>). -->
-
-_2-minute live demo: video embed lands here._
-
-## Tech Stack
-
-| Layer | Tool |
-|-------|------|
-| Runtime / package manager | Bun |
-| Backend | Hono |
-| Frontend | Vite + React + Canvas |
-| Linter / formatter | Biome |
-| Tests | `bun test` |
-| Smart contracts | Solidity + Foundry (ERC-7857, ENS resolver) |
-| Network | Sepolia testnet (real mainnet trading is **out of scope**) |
-
-## Quick Start
+Requires [Bun](https://bun.sh) ≥ 1.3 and [Foundry](https://getfoundry.sh) (only for contracts).
 
 ```bash
-make install                # install all workspace deps
-make dev                    # backend :3000 + frontend :5173
-# open http://localhost:5173 and play the local forge MVP
+git clone https://github.com/susumutomita/OpenAgents
+cd OpenAgents
+bun install
+make dev                 # opens http://localhost:5173
 ```
 
-## Safety / Scope
+Quality gate (run before opening a PR):
 
-- **Current branch is local-first.** It derives deterministic wallet drafts and ENS-style names, but does not push to Sepolia yet.
-- **No real-money betting.** Strength of play affects initial testnet token funding only.
-- **Reproducibility.** Same play log → same agent. Always.
-- **Out of scope** (follow-ups): mainnet, multi-chain, agent breeding, full marketplace UI.
+```bash
+bun scripts/architecture-harness.ts --staged --fail-on=error
+make before-commit       # lint_text + lint + typecheck + tests + build
+```
+
+---
+
+## Multi-chain contract deploy
+
+```bash
+# .env (gitignored)
+PRIVATE_KEY=0x...
+SEPOLIA_RPC_URL=https://...
+BASE_SEPOLIA_RPC_URL=https://...
+OP_SEPOLIA_RPC_URL=https://...
+ARBITRUM_SEPOLIA_RPC_URL=https://...
+ETHERSCAN_API_KEY=...
+
+# Single network
+make deploy NETWORK=sepolia
+
+# All testnets at once
+make deploy_all
+```
+
+Foundry script `contracts/script/Deploy.s.sol` deploys both `AgentForgeINFT.sol` and `AgentForgeSubnameRegistry.sol` in a single transaction per network. RPC endpoints are wired via `contracts/foundry.toml`.
+
+---
+
+## Tech stack
+
+| Layer | Choice | Why |
+|-------|--------|-----|
+| Runtime / package manager | **Bun** | One-shot install, native TypeScript, fast tests. |
+| Frontend | **Vite + React 19 + Canvas 2D** | Sub-300ms cold reload, NES-resolution rendering. |
+| Game engine | hand-rolled in `packages/frontend/src/game/` | NES 256×240 internal canvas, 60 fps loop, deterministic step. |
+| Smart contracts | **Solidity 0.8.28 + Foundry** | Multi-chain script orchestration, no Hardhat lock-in. |
+| Wallet derivation | **Web Crypto SubtleCrypto** | Works in browser & Bun, no Node-only deps. |
+| Lint / format | **Biome** | Single tool, fast, opinionated. |
+| Tests | **bun test** with Japanese BDD descriptions | Built-in, zero config. |
+| Static deploy | **Vercel** (`vercel.json` included) | SPA rewrites, `bun install --frozen-lockfile` build. |
+
+---
+
+## Sponsor integrations
+
+This project is purpose-built around the ETHGlobal sponsor stack — every primitive does load-bearing work, not cosmetic name-dropping.
+
+| Sponsor | Role | Where in the code |
+|---------|------|-------------------|
+| **0G** | iNFT (ERC-7857) for the agent body, Storage for the play log + memory, Compute for sealed inference of the design pipeline | `contracts/src/AgentForgeINFT.sol`, `packages/shared/src/forge.ts` |
+| **ENS** | Auto-issued subname `{handle}.openagents.eth` with verifiable text records (`combat-power`, `archetype`, `design-hash`) | `contracts/src/AgentForgeSubnameRegistry.sol`, `packages/shared/src/forge.ts` |
+| **Gensyn AXL** | Multi-agent / swarm execution. OPTION-style commits in the design pipeline spawn additional encrypted peer nodes | `packages/frontend/src/game/runtime.ts` (votes), runtime topology in `AgentDashboard` |
+| **Uniswap** | The agent's actual on-chain action: real swaps via Uniswap API, `FEEDBACK.md` documents DX learnings | [`FEEDBACK.md`](./FEEDBACK.md) |
+| **KeeperHub** | Reliable execution layer for agent transactions: x402 coin-insert, private-mempool routing, MEV protection, retries | Wired into the agent runtime narrative |
+
+Each sponsor's prize requirements live in [`docs/prizes/`](./docs/prizes/) (English original + Japanese translation).
+
+---
+
+## Differentiation vs. traditional agent design
+
+| | Traditional approach | **Gr@diusWeb3** |
+|---|---|---|
+| **Design surface** | Complex configs, abstract sliders | Play to design (visible tradeoffs) |
+| **Tradeoff visibility** | Black box | Each shot is a vote — explicit |
+| **Reproducibility** | Low (settings drift, undocumented) | High (deterministic from play log) |
+| **Learning curve** | Steep — read docs to even start | Fun & intuitive — Mario 1-1 |
+| **Outcome** | Unpredictable | Explainable & tunable |
+| **Web3 integration** | Bolted on later | Native (iNFT + ENS + AXL + 0G + Uniswap from day 1) |
+
+---
+
+## Repository layout
+
+```
+.
+├── packages/
+│   ├── frontend/              # Vite + React + Canvas (the only deployable)
+│   │   └── src/
+│   │       ├── game/          # NES-grade engine (palette, sprites, font, terrain, runtime)
+│   │       ├── components/    # BirthArcade, AgentDashboard, RadarDisplay
+│   │       └── App.tsx        # 15-section landing page
+│   ├── shared/                # Pure functional core (profile, policy, wallet, forge)
+│   └── backend/               # Optional Hono server (frozen — not in the deploy path)
+├── contracts/
+│   ├── src/                   # AgentForgeINFT.sol, AgentForgeSubnameRegistry.sol
+│   ├── script/Deploy.s.sol    # Multi-chain deploy script
+│   └── foundry.toml           # rpc_endpoints + etherscan
+├── docs/
+│   ├── specs/                 # Product spec + Claude Design pitch deck export
+│   ├── prizes/                # Sponsor prize requirements (EN + JP)
+│   └── architecture/harness.md# Hard invariants
+├── Plan.md                    # Working plan + progress log + retro
+├── FEEDBACK.md                # Uniswap-required DX feedback
+├── vercel.json                # Static SPA deploy config
+├── Makefile                   # `make dev` / `make before-commit` / `make deploy`
+└── CLAUDE.md                  # AI agent contributor guide (Japanese)
+```
+
+---
+
+## What "shipped in a hackathon weekend" looks like
+
+- Game engine, landing page, and contracts written from scratch with original sprites and code.
+- Five sponsor integrations woven through one product (not five demos in a trench coat).
+- No backend, no database, no fragile fetch flows — the entire app forges agents in-browser.
+- Pre-wired multi-chain deploy script so judges can verify on Sepolia / Base / OP / Arbitrum without reading our docs.
+- Hard architectural invariants enforced by `bun scripts/architecture-harness.ts` (no `npx`, no mock data, no `it.only`, `Plan.md` required).
+- Japanese BDD tests because the maintainer is Japanese and writes specs the way a Japanese engineer reads them.
+
+---
+
+## Roadmap
+
+- [ ] Real wallet integration (wagmi + RainbowKit) so the iNFT mints to the player's actual wallet
+- [ ] On-chain leaderboard scoring agent battle outcomes
+- [ ] Agent breeding (iNFT × iNFT → child iNFT) with deterministic stat inheritance
+- [ ] Mainnet readiness audit + bug bounty
+- [ ] Mobile arcade (touch controls, vertical layout)
+
+---
+
+## Contributing
+
+Read [`CLAUDE.md`](./CLAUDE.md) and [`AGENTS.md`](./AGENTS.md). Then:
+
+1. Fork → branch → write tests in **Japanese BDD** style.
+2. `make before-commit` must be green (architecture-harness 0 errors, lint 0, typecheck 0, all tests pass, builds succeed).
+3. Open a PR with a Conventional-Commit-style title.
+4. Issues stay open by referring to them as `Issue 番号` in commits — never `#番号` (auto-close protection).
+
+The architecture invariants in [`docs/architecture/harness.md`](./docs/architecture/harness.md) are non-negotiable. If a change conflicts with one, the invariant wins until you write an ADR superseding it.
+
+---
 
 ## Acknowledgments
 
-- **Konami** — for _Gradius_ (1985) and the Moai stage. The `@` in `Gr@dius` is an homage and a trademark side-step, not a typo.
-- **0G, ENS, Gensyn, KeeperHub, Uniswap Foundation** — see [`docs/prizes/`](./docs/prizes/) for full requirements.
+- **Konami** for *Gradius* (1985) and the Moai stage. The `@` in `Gr@dius` is intentional — homage and a deliberate trademark side-step.
+- **Claude Design** for the visual reference (`docs/specs/Gradius Web3 Redesign.html`).
+- The **0G / ENS / Gensyn / Uniswap / KeeperHub** teams for primitives that make agentic finance buildable in 60 seconds.
+
+---
 
 ## License
 
-MIT — see [`LICENSE`](./LICENSE).
+[MIT](./LICENSE) © 2026 Susumu Tomita
+
+> Insert a coin. Play 60 seconds. Walk away with an autonomous agent.

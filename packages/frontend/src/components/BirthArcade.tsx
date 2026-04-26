@@ -1,35 +1,21 @@
-import {
-  type Capsule,
-  type PlayLog,
-  capsuleAtBarPosition,
-} from '@openagents/shared/browser';
-import {
-  type CSSProperties,
-  type ChangeEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import { CHAINS, type ChainId } from '../game/chains';
+import type { PlayLog } from '@openagents/shared/browser';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { drawBigText, pixelText } from '../game/font';
 import { PAL, RH, RW } from '../game/palette';
 import {
   ARCHETYPE_COLOR,
   ARCHETYPE_DESC,
+  ARCHETYPE_GLYPH,
   ARCHETYPE_LABEL,
   type Archetype,
-  BAR_SLOTS,
   GAME_DURATION_FRAMES,
   type InputState,
   type SimulatedTrade,
   buildPlayLog,
-  commit,
   createRuntime,
   deriveArchetype,
   getAllocation,
   render as renderRuntime,
-  setChain,
   simulateTrades,
   step as stepRuntime,
 } from '../game/runtime';
@@ -47,10 +33,10 @@ interface BirthArcadeProps {
   onComplete: (playLog: PlayLog, archetype: Archetype) => void | Promise<void>;
 }
 
-type Phase = 'title' | 'countdown' | 'play' | 'debrief';
+type Phase = 'idle' | 'play' | 'debrief';
 
 const SCALE = 3;
-const TITLE_BLINK_FRAMES = 32;
+const RESTART_DELAY = 2400;
 
 export function BirthArcade({
   disabled = false,
@@ -64,46 +50,33 @@ export function BirthArcade({
     down: false,
     left: false,
     right: false,
-    fire: false,
   });
-  const phaseRef = useRef<Phase>('title');
+  const phaseRef = useRef<Phase>('idle');
   const onCompleteRef = useRef(onComplete);
-  const [phase, setPhase] = useState<Phase>('title');
-  const [tick, setTick] = useState(0);
-  const [chain, setChainState] = useState<ChainId>('ARB');
-  const [countdown, setCountdown] = useState(3);
+  const titleTRef = useRef(0);
+  const [phase, setPhase] = useState<Phase>('idle');
   const [archetype, setArchetype] = useState<Archetype | null>(null);
   const [trades, setTrades] = useState<SimulatedTrade[]>([]);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
-
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
 
   const startGame = useCallback(() => {
-    if (disabled || phase !== 'title') return;
-    setCountdown(3);
-    setPhase('countdown');
-  }, [disabled, phase]);
+    if (disabled) return;
+    runtimeRef.current = createRuntime();
+    setArchetype(null);
+    setTrades([]);
+    setPhase('play');
+  }, [disabled]);
 
-  // Countdown timer
-  useEffect(() => {
-    if (phase !== 'countdown') return;
-    const timers = [
-      window.setTimeout(() => setCountdown(2), 700),
-      window.setTimeout(() => setCountdown(1), 1400),
-      window.setTimeout(() => {
-        runtimeRef.current = createRuntime(chain);
-        setPhase('play');
-      }, 2100),
-    ];
-    return () => {
-      for (const t of timers) window.clearTimeout(t);
-    };
-  }, [phase, chain]);
+  const replay = useCallback(() => {
+    runtimeRef.current = createRuntime();
+    setPhase('play');
+  }, []);
 
   // Animation loop
   useEffect(() => {
@@ -119,8 +92,7 @@ export function BirthArcade({
     let last = performance.now();
     let acc = 0;
     const FRAME = 1000 / 60;
-
-    const titleStarsRuntime = createRuntime(chain);
+    const titleStars = createRuntime();
 
     const onKey = (event: KeyboardEvent, down: boolean) => {
       const key = event.key.toLowerCase();
@@ -134,14 +106,22 @@ export function BirthArcade({
       if (key === 'arrowdown' || key === 's') inputs.down = down;
       if (key === 'arrowleft' || key === 'a') inputs.left = down;
       if (key === 'arrowright' || key === 'd') inputs.right = down;
-      if (key === ' ' || key === 'j') inputs.fire = down;
-      if (down) {
-        if (key === 'z' || key === 'enter') {
-          const currentPhase = phaseRef.current;
-          if (currentPhase === 'title') startGame();
-          else if (currentPhase === 'play' && runtimeRef.current) {
-            commit(runtimeRef.current);
-          }
+      if (down && phaseRef.current === 'idle') {
+        if (
+          key === ' ' ||
+          key === 'enter' ||
+          key === 'z' ||
+          key.startsWith('arrow') ||
+          key === 'w' ||
+          key === 'a' ||
+          key === 's' ||
+          key === 'd'
+        ) {
+          startGame();
+        }
+      } else if (down && phaseRef.current === 'debrief') {
+        if (key === ' ' || key === 'enter' || key === 'z') {
+          replay();
         }
       }
     };
@@ -155,22 +135,22 @@ export function BirthArcade({
       last = now;
       while (acc >= FRAME) {
         const currentPhase = phaseRef.current;
-        if (currentPhase === 'play') {
-          const rt = runtimeRef.current;
-          if (rt) {
-            stepRuntime(rt, inputRef.current);
-            if (rt.finished) {
-              const arch = deriveArchetype(rt);
-              setArchetype(arch);
-              setTrades(simulateTrades(arch));
-              setPhase('debrief');
-              const log = buildPlayLog(rt, globalThis.crypto.randomUUID());
-              void onCompleteRef.current(log, arch);
-            }
+        if (currentPhase === 'play' && runtimeRef.current) {
+          stepRuntime(runtimeRef.current, inputRef.current);
+          if (runtimeRef.current.finished) {
+            const arch = deriveArchetype(runtimeRef.current);
+            setArchetype(arch);
+            setTrades(simulateTrades(arch));
+            setPhase('debrief');
+            const log = buildPlayLog(
+              runtimeRef.current,
+              globalThis.crypto.randomUUID()
+            );
+            void onCompleteRef.current(log, arch);
           }
         } else {
-          titleStarsRuntime.t += 1;
-          for (const s of titleStarsRuntime.stars) {
+          titleTRef.current += 1;
+          for (const s of titleStars.stars) {
             s.x -= s.speed * 0.018;
             if (s.x < 0) {
               s.x = RW;
@@ -184,20 +164,12 @@ export function BirthArcade({
       const currentPhase = phaseRef.current;
       if (currentPhase === 'play' && runtimeRef.current) {
         renderRuntime(ctx, runtimeRef.current);
-      } else if (currentPhase === 'title') {
-        renderTitle(ctx, titleStarsRuntime.t, titleStarsRuntime.stars);
-      } else if (currentPhase === 'countdown') {
-        renderCountdown(ctx, titleStarsRuntime.t, titleStarsRuntime.stars);
+      } else if (currentPhase === 'idle') {
+        renderTitle(ctx, titleTRef.current, titleStars.stars);
       } else if (currentPhase === 'debrief') {
-        renderDebrief(
-          ctx,
-          titleStarsRuntime.t,
-          titleStarsRuntime.stars,
-          archetype
-        );
+        renderDebrief(ctx, titleTRef.current, titleStars.stars, archetype);
       }
 
-      setTick((value) => (value + 1) % 1024);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -207,51 +179,39 @@ export function BirthArcade({
       window.removeEventListener('keyup', onUp);
       cancelAnimationFrame(raf);
     };
-  }, [archetype, chain, startGame]);
+  }, [archetype, replay, startGame]);
 
-  const handleChainChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const next = event.target.value as ChainId;
-    setChainState(next);
-    if (runtimeRef.current) setChain(runtimeRef.current, next);
-  };
+  // Auto-restart back to title after debrief idle
+  useEffect(() => {
+    if (phase !== 'debrief') return;
+    const timer = window.setTimeout(() => {
+      setPhase('idle');
+    }, 12000);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
-  const stageStyle: CSSProperties = {
+  const stageStyle = {
     width: RW * SCALE,
     height: RH * SCALE,
     aspectRatio: `${RW} / ${RH}`,
-  };
+  } as const;
+
+  void RESTART_DELAY;
+  void playerName;
 
   return (
-    <section className="panel arcade-panel">
+    <section className="panel arcade-panel arcade-panel-clean">
       <div className="arcade-shell">
         <div className="arcade-controls-top">
-          <div className="hint-pill">
+          <span className="hint-pill">
             <span className="hint-key">←→↑↓ / WASD</span>
             <span className="hint-act">MOVE</span>
-          </div>
-          <div className="hint-pill">
-            <span className="hint-key">SPACE</span>
+          </span>
+          <span className="hint-pill">
+            <span className="hint-key">AUTO</span>
             <span className="hint-act">FIRE</span>
-          </div>
-          <div className="hint-pill">
-            <span className="hint-key">Z / ENTER</span>
-            <span className="hint-act">COMMIT</span>
-          </div>
-          <div className="chain-pill">
-            <label htmlFor="chain-select">CHAIN</label>
-            <select
-              id="chain-select"
-              value={chain}
-              onChange={handleChainChange}
-              disabled={phase === 'play' || phase === 'countdown'}
-            >
-              {(Object.keys(CHAINS) as ChainId[]).map((id) => (
-                <option key={id} value={id}>
-                  {CHAINS[id].name}
-                </option>
-              ))}
-            </select>
-          </div>
+          </span>
+          <span className="hint-pill subtle">No buttons. Just move.</span>
         </div>
         <div className="crt crt-on" style={stageStyle}>
           <canvas
@@ -267,50 +227,15 @@ export function BirthArcade({
           />
           <div className="crt-scanlines" />
           <div className="crt-vignette" />
-          {phase === 'title' ? (
-            <div className="arcade-overlay">
-              <div className="arcade-card title-card">
-                <div className="title-eyebrow">
-                  PILOT · {playerName.trim() || 'ANON'}
-                </div>
-                <h3>INSERT 1 COIN · DESIGN AN AGENT IN 60s</h3>
-                <p>
-                  Shoot to choose, dodge to commit. Every action shapes a real
-                  on-chain DeFi portfolio for the agent you're forging.
-                </p>
-                <div className="archetype-row">
-                  <div
-                    className="archetype-chip"
-                    style={{ borderColor: PAL.ringCyan }}
-                  >
-                    <span>CONSERVATIVE</span>
-                    <small>USDC · multi-sig · stop-loss</small>
-                  </div>
-                  <div
-                    className="archetype-chip"
-                    style={{ borderColor: PAL.shipFlame }}
-                  >
-                    <span>BALANCED</span>
-                    <small>ETH · ARB · rotating yield</small>
-                  </div>
-                  <div
-                    className="archetype-chip"
-                    style={{ borderColor: PAL.warn }}
-                  >
-                    <span>AGGRESSIVE</span>
-                    <small>memecoins · leverage · all-in</small>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={startGame}
-                  disabled={disabled}
-                >
-                  PRESS Z · INSERT COIN
-                </button>
-              </div>
-            </div>
+          {phase === 'idle' ? (
+            <button
+              type="button"
+              className="arcade-press-start"
+              onClick={startGame}
+              disabled={disabled}
+            >
+              ▶ PRESS ANY KEY
+            </button>
           ) : null}
           {phase === 'debrief' && archetype ? (
             <div className="arcade-overlay arcade-debrief">
@@ -361,91 +286,25 @@ export function BirthArcade({
                     ))}
                   </ul>
                 </div>
-                <div className="debrief-hint">
-                  AGENT FORGED ON {CHAINS[chain].name} · TX HASH STREAMING ↓
-                </div>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={replay}
+                  disabled={disabled}
+                >
+                  ▶ INSERT 1 MORE COIN
+                </button>
               </div>
             </div>
           ) : null}
-          {phase === 'countdown' ? (
-            <div className="arcade-overlay arcade-countdown">
-              <div>{countdown}</div>
-              <small>STAND BY</small>
-            </div>
-          ) : null}
         </div>
-        {phase === 'play' && runtimeRef.current ? (
-          <ArcadeStatus
-            tick={tick}
-            durationFrames={GAME_DURATION_FRAMES}
-            runtime={runtimeRef.current}
-          />
-        ) : null}
+        <p className="arcade-tagline">
+          The agent you forge mirrors how you played.
+          <strong> No manual. No menu. Just play.</strong>
+        </p>
       </div>
     </section>
   );
-}
-
-interface ArcadeStatusProps {
-  tick: number;
-  durationFrames: number;
-  runtime: ReturnType<typeof createRuntime>;
-}
-
-function ArcadeStatus({
-  runtime,
-  durationFrames,
-  tick: _tick,
-}: ArcadeStatusProps) {
-  const sec = Math.max(0, Math.ceil((durationFrames - runtime.t) / 60));
-  const slot = runtime.bar >= 0 ? capsuleAtBarPosition(runtime.bar) : null;
-  return (
-    <div className="arcade-status">
-      <div>
-        <span>TIME</span>
-        <strong>{String(sec).padStart(2, '0')}s</strong>
-      </div>
-      <div>
-        <span>HULL</span>
-        <strong>{runtime.player.hp}</strong>
-      </div>
-      <div>
-        <span>SCORE</span>
-        <strong>{runtime.score.toLocaleString()}</strong>
-      </div>
-      <div>
-        <span>BAR</span>
-        <strong>{slot ? capsuleEmoji(slot) : '—'}</strong>
-      </div>
-      <div>
-        <span>COMMITS</span>
-        <strong>
-          {Object.values(runtime.commits).reduce((a, b) => a + b, 0)}
-        </strong>
-      </div>
-      <div>
-        <span>MOAI</span>
-        <strong>{runtime.moaisDown}/5</strong>
-      </div>
-    </div>
-  );
-}
-
-function capsuleEmoji(c: Capsule) {
-  switch (c) {
-    case 'speed':
-      return 'SPD';
-    case 'missile':
-      return 'MIS';
-    case 'double':
-      return 'DBL';
-    case 'laser':
-      return 'LSR';
-    case 'option':
-      return 'OPT';
-    case 'shield':
-      return 'SHD';
-  }
 }
 
 function renderTitle(
@@ -460,37 +319,43 @@ function renderTitle(
     ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
   }
 
-  // Demo Vic Viper drift
+  // Floating Vic Viper across screen
   const px = ((t * 0.4) % (RW + 24)) - 24;
   drawSprite(ctx, VIC_VIPER, VIC_KEY, px | 0, RH / 2 - 6);
+
+  // Demo enemies in 3 colors so the player sees what they'll shoot
+  drawDemoSquadron(ctx, t);
+
   // Moai watching
   drawSprite(ctx, MOAI, MOAI_KEY, RW - 56, 80);
 
-  // Big banner
+  // Title
   drawBigText(ctx, 'GR@DIUS', RW / 2 - 42, 30, PAL.hudYellow);
   drawBigText(ctx, ' WEB 3', RW / 2 - 42, 56, PAL.ringCyan);
-  pixelText(ctx, 'PLAY TO DESIGN AGENTS', RW / 2 - 60, 82, PAL.shipWhite);
-  pixelText(ctx, 'KONAMI HOMAGE  ORIGINAL ART', RW / 2 - 78, 98, PAL.starDim);
+  pixelText(ctx, 'PLAY 60S → AGENT IS BORN', RW / 2 - 72, 82, PAL.shipWhite);
 
-  // Beat hint
   if ((t >> 5) % 2 === 0) {
-    pixelText(ctx, 'PRESS Z TO INSERT COIN', RW / 2 - 66, 200, PAL.hudOrange);
+    pixelText(ctx, 'PRESS ANY KEY', RW / 2 - 36, 200, PAL.hudOrange);
   }
 }
 
-function renderCountdown(
-  ctx: CanvasRenderingContext2D,
-  _t: number,
-  stars: ReturnType<typeof createRuntime>['stars']
-) {
-  ctx.fillStyle = PAL.black;
-  ctx.fillRect(0, 0, RW, RH);
-  for (const s of stars) {
-    ctx.fillStyle = s.bright ? PAL.starBright : PAL.starDim;
-    ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
+function drawDemoSquadron(ctx: CanvasRenderingContext2D, t: number) {
+  const colors = [
+    { color: '#7bdff2', label: 'SAFE' },
+    { color: '#f8d840', label: ' MID' },
+    { color: '#ff5252', label: 'RISK' },
+  ];
+  for (let i = 0; i < colors.length; i += 1) {
+    const c = colors[i];
+    if (!c) continue;
+    const x = 40 + i * 60 + Math.sin((t + i * 30) * 0.05) * 6;
+    const y = 110 + Math.cos((t + i * 20) * 0.05) * 8;
+    ctx.fillStyle = c.color;
+    ctx.fillRect((x | 0) - 6, (y | 0) - 4, 12, 8);
+    ctx.fillStyle = '#fefae0';
+    ctx.fillRect((x | 0) - 3, (y | 0) - 2, 6, 4);
+    pixelText(ctx, c.label, (x | 0) - 9, (y | 0) + 6, c.color);
   }
-  drawBigText(ctx, 'STAGE 1', RW / 2 - 42, 90, PAL.hudYellow);
-  pixelText(ctx, 'MOAI · WEB3 ONBOARDING', RW / 2 - 66, 116, PAL.shipWhite);
 }
 
 function renderDebrief(
@@ -510,21 +375,23 @@ function renderDebrief(
     ctx.fillStyle = s.bright ? PAL.starBright : PAL.starDim;
     ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
   }
-  drawBigText(ctx, 'STAGE CLEAR', RW / 2 - 66, 60, PAL.hudYellow);
+  drawBigText(ctx, 'STAGE CLEAR', RW / 2 - 66, 50, PAL.hudYellow);
   if (archetype) {
     pixelText(
       ctx,
-      `${ARCHETYPE_LABEL[archetype]} AGENT DEPLOYED`,
-      RW / 2 - 84,
-      100,
+      `${ARCHETYPE_LABEL[archetype]} AGENT FORGED`,
+      RW / 2 - 78,
+      90,
       ARCHETYPE_COLOR[archetype]
     );
+    pixelText(
+      ctx,
+      `WINNING VOTE  ${ARCHETYPE_GLYPH[archetype]}`,
+      RW / 2 - 60,
+      106,
+      PAL.shipWhite
+    );
   }
-  pixelText(ctx, 'AGENT IS NOW TRADING', RW / 2 - 60, 120, PAL.shipWhite);
-  // Animate ship flying off to "trade"
   const px = (t * 1.5) % (RW + 80);
   drawSprite(ctx, VIC_VIPER, VIC_KEY, px | 0, 150);
 }
-
-// Keep existing barslots constant exported for callers wanting label
-export { BAR_SLOTS };
