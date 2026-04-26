@@ -1,12 +1,12 @@
 # Plan
 
-## Agent Forge — 2026-04-26
+## Agent Galaga — 2026-04-26
 
 ### 目的
 
-**「Play to Design Agents」** — AI エージェント設計をゲームに変えるプロダクト。グラディウス風プレイで「トレードオフを撃ち落とす」 = 設計選択を行い、**30〜90 秒**で agent_profile (5 軸 + 戦闘力) + iNFT + ENS 名 + wallet が生成される。Agent は他 Agent と AXL で通信、任意で DeFi タスク (Uniswap swap) を実行する。2 分デモで全フロー完結。
+**「Play to Design Agents」** — AI エージェント設計を **Galaga (1981)** に変えるプロダクト。雑魚撃ち分けで設計判断、5 種ボスの tractor beam を **capture → rescue** することで agent が dual fighter 化 (= trait 吸収)。**30〜90 秒**で agent_profile (5 軸 + 戦闘力) + iNFT + ENS 名 + wallet が生成される。Agent は他 Agent と AXL で通信、任意で DeFi タスク (Uniswap swap) を実行する。2 分デモで全フロー完結。
 
-**議事録グラディウス公式の直接適用**: 撃ち落とし = 設計判断 = 個性。
+**議事録グラディウス公式の直接適用**: 撃ち落とし = 設計判断 = 個性。Galaga 固有の capture-rescue が **agent が design archetype を吸収する隠喩** として効く。
 
 仕様書: [`docs/specs/2026-04-26-agent-forge.md`](./docs/specs/2026-04-26-agent-forge.md)
 
