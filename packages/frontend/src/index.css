@@ -141,12 +141,150 @@ button {
   margin-bottom: 24px;
 }
 
+.arcade-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #040716;
+}
+
 .arcade-canvas {
   width: 100%;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #081420;
-  aspect-ratio: 16 / 9;
+  height: 100%;
+  display: block;
+  background: #040716;
+  image-rendering: pixelated;
+}
+
+.arcade-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(4, 7, 22, 0.55),
+    rgba(4, 7, 22, 0.92)
+  );
+  backdrop-filter: blur(2px);
+}
+
+.arcade-card {
+  max-width: 520px;
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: rgba(4, 7, 22, 0.92);
+  border: 1px solid rgba(123, 223, 242, 0.28);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  display: grid;
+  gap: 14px;
+  text-align: left;
+}
+
+.arcade-card h3 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+
+.arcade-card ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.arcade-card p {
+  margin: 0;
+  color: rgba(254, 250, 224, 0.82);
+  line-height: 1.55;
+}
+
+.arcade-card kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.08);
+  font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.arcade-hint {
+  font-size: 0.86rem;
+  color: rgba(254, 250, 224, 0.6);
+}
+
+.primary-button {
+  justify-self: start;
+  padding: 14px 22px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #ffd166, #ff6b6b);
+  color: #081420;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.primary-button:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.arcade-countdown {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+}
+
+.arcade-countdown span {
+  font-size: clamp(6rem, 12vw, 10rem);
+  font-weight: 800;
+  color: #ffd166;
+  text-shadow: 0 6px 32px rgba(255, 209, 102, 0.5);
+  line-height: 1;
+}
+
+.arcade-countdown small {
+  letter-spacing: 0.4em;
+  color: rgba(254, 250, 224, 0.7);
+  font-size: 0.9rem;
+}
+
+.arcade-debrief .arcade-card {
+  text-align: center;
+  border-color: rgba(128, 237, 153, 0.4);
+}
+
+.arcade-summary {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.arcade-summary div {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  gap: 4px;
+}
+
+.arcade-summary span {
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.6);
+}
+
+.arcade-summary strong {
+  font-size: 1rem;
+  color: #fefae0;
 }
 
 .hud-grid,
@@ -370,7 +508,8 @@ button {
   .policy-metrics,
   .stats-grid,
   .node-grid,
-  .power-bar {
+  .power-bar,
+  .arcade-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
