@@ -8,7 +8,10 @@ import {
   ARCHETYPE_GLYPH,
   ARCHETYPE_LABEL,
   type Archetype,
-  GAME_DURATION_FRAMES,
+  CAPABILITY_COLOR,
+  CAPABILITY_DESC,
+  CAPABILITY_LABEL,
+  CAPABILITY_ORDER,
   type InputState,
   type SimulatedTrade,
   buildPlayLog,
@@ -29,18 +32,15 @@ import {
 
 interface BirthArcadeProps {
   disabled?: boolean;
-  playerName: string;
   onComplete: (playLog: PlayLog, archetype: Archetype) => void | Promise<void>;
 }
 
 type Phase = 'idle' | 'play' | 'debrief';
 
 const SCALE = 3;
-const RESTART_DELAY = 2400;
 
 export function BirthArcade({
   disabled = false,
-  playerName,
   onComplete,
 }: BirthArcadeProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -196,9 +196,6 @@ export function BirthArcade({
     aspectRatio: `${RW} / ${RH}`,
   } as const;
 
-  void RESTART_DELAY;
-  void playerName;
-
   return (
     <section className="panel arcade-panel arcade-panel-clean">
       <div className="arcade-shell">
@@ -244,7 +241,7 @@ export function BirthArcade({
                   className="debrief-header"
                   style={{ color: ARCHETYPE_COLOR[archetype] }}
                 >
-                  <span className="debrief-eyebrow">PORTFOLIO LOCKED</span>
+                  <span className="debrief-eyebrow">AGENT POLICY LOCKED</span>
                   <h3>{ARCHETYPE_LABEL[archetype]} AGENT</h3>
                   <p>{ARCHETYPE_DESC[archetype]}</p>
                 </div>
@@ -299,8 +296,8 @@ export function BirthArcade({
           ) : null}
         </div>
         <p className="arcade-tagline">
-          The agent you forge mirrors how you played.
-          <strong> No manual. No menu. Just play.</strong>
+          Every kill commits an Agent module into the policy.
+          <strong> No menu. No config form. Just play.</strong>
         </p>
       </div>
     </section>
@@ -323,7 +320,7 @@ function renderTitle(
   const px = ((t * 0.4) % (RW + 24)) - 24;
   drawSprite(ctx, VIC_VIPER, VIC_KEY, px | 0, RH / 2 - 6);
 
-  // Demo enemies in 3 colors so the player sees what they'll shoot
+  // Demo modules so the player sees what each target means.
   drawDemoSquadron(ctx, t);
 
   // Moai watching
@@ -332,7 +329,8 @@ function renderTitle(
   // Title
   drawBigText(ctx, 'GR@DIUS', RW / 2 - 42, 30, PAL.hudYellow);
   drawBigText(ctx, ' WEB 3', RW / 2 - 42, 56, PAL.ringCyan);
-  pixelText(ctx, 'PLAY 60S → AGENT IS BORN', RW / 2 - 72, 82, PAL.shipWhite);
+  pixelText(ctx, 'SHOOT MODULES -> POLICY', RW / 2 - 72, 82, PAL.shipWhite);
+  pixelText(ctx, 'PLAY 60S -> AGENT IS BORN', RW / 2 - 72, 94, PAL.hudYellow);
 
   if ((t >> 5) % 2 === 0) {
     pixelText(ctx, 'PRESS ANY KEY', RW / 2 - 36, 200, PAL.hudOrange);
@@ -340,21 +338,29 @@ function renderTitle(
 }
 
 function drawDemoSquadron(ctx: CanvasRenderingContext2D, t: number) {
-  const colors = [
-    { color: '#7bdff2', label: 'SAFE' },
-    { color: '#f8d840', label: ' MID' },
-    { color: '#ff5252', label: 'RISK' },
-  ];
-  for (let i = 0; i < colors.length; i += 1) {
-    const c = colors[i];
-    if (!c) continue;
-    const x = 40 + i * 60 + Math.sin((t + i * 30) * 0.05) * 6;
-    const y = 110 + Math.cos((t + i * 20) * 0.05) * 8;
-    ctx.fillStyle = c.color;
+  for (let i = 0; i < CAPABILITY_ORDER.length; i += 1) {
+    const capability = CAPABILITY_ORDER[i];
+    if (!capability) continue;
+    const x = 28 + i * 46 + Math.sin((t + i * 30) * 0.05) * 4;
+    const y = 122 + Math.cos((t + i * 20) * 0.05) * 7;
+    ctx.fillStyle = CAPABILITY_COLOR[capability];
     ctx.fillRect((x | 0) - 6, (y | 0) - 4, 12, 8);
     ctx.fillStyle = '#fefae0';
     ctx.fillRect((x | 0) - 3, (y | 0) - 2, 6, 4);
-    pixelText(ctx, c.label, (x | 0) - 9, (y | 0) + 6, c.color);
+    pixelText(
+      ctx,
+      CAPABILITY_LABEL[capability],
+      (x | 0) - 18,
+      (y | 0) + 6,
+      CAPABILITY_COLOR[capability]
+    );
+    pixelText(
+      ctx,
+      CAPABILITY_DESC[capability].slice(0, 8),
+      (x | 0) - 24,
+      (y | 0) + 14,
+      PAL.hudWhite
+    );
   }
 }
 
@@ -386,7 +392,7 @@ function renderDebrief(
     );
     pixelText(
       ctx,
-      `WINNING VOTE  ${ARCHETYPE_GLYPH[archetype]}`,
+      `EXEC MODE  ${ARCHETYPE_GLYPH[archetype]}`,
       RW / 2 - 60,
       106,
       PAL.shipWhite

@@ -4,8 +4,10 @@ import {
   createAgentBirthDraft,
 } from '@openagents/shared/browser';
 import { useEffect, useRef, useState } from 'react';
+import { useAccount } from 'wagmi';
 import { AgentDashboard } from './components/AgentDashboard';
 import { BirthArcade } from './components/BirthArcade';
+import { ConnectButton } from './components/ConnectButton';
 import type { Archetype } from './game/runtime';
 
 const ENEMIES = [
@@ -57,24 +59,24 @@ const MOAI_CONSTRAINTS = [
 
 const AGENT_EXAMPLES = [
   {
-    name: 'SHIELD PENGUIN',
+    name: 'AEGIS TREASURY',
     color: '#7bdff2',
-    summary: 'Safe & Reliable',
-    sub: 'Low risk · Steady growth',
+    summary: 'Capital Preservation',
+    sub: 'Low risk · Circuit breakers',
     body: 'Conservative onchain agent. USDC-heavy, capped drawdown, multi-sig confirmations. Sleeps in cold storage; wakes for high-conviction signals.',
   },
   {
-    name: 'CHAOS OCTOPUS',
+    name: 'AXL COORDINATOR',
     color: '#c084ff',
-    summary: 'Multi-Agent',
-    sub: 'High variance · High potential',
+    summary: 'Peer Execution',
+    sub: 'AXL swarm · Bounded drift',
     body: 'OPTION-heavy. Eight peers over AXL coordinate around emerging meta. Edge comes from collective speed; failures are expensive but bounded.',
   },
   {
-    name: 'HEAVY WHALE',
+    name: 'RAZOR ROUTER',
     color: '#f8d840',
-    summary: 'Precise & Strong',
-    sub: 'Slow but powerful · High confidence',
+    summary: 'High Conviction',
+    sub: 'Precise swaps · Slippage-aware',
     body: 'LASER-heavy. Concentrated positions, deep reasoning before each shot. Trades less often, but each trade is decisive.',
   },
 ];
@@ -140,17 +142,24 @@ export function App() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const arcadeRef = useRef<HTMLDivElement | null>(null);
+  const { address: ownerAddress, isConnected } = useAccount();
 
   async function handleComplete(playLog: PlayLog, derivedArchetype: Archetype) {
     try {
       setSubmitting(true);
       setError('');
-      const draft = await createAgentBirthDraft(
-        playerName.trim() || 'Pilot',
-        playLog
-      );
+      const pilot = playerName.trim() || 'Pilot';
+      const draft = await createAgentBirthDraft(pilot, playLog);
+      // The connected wallet owns the agent. Falls back to the deterministic
+      // pseudo-wallet when no wallet is connected so the demo still works.
       const stored: StoredAgentBirth = {
         ...draft,
+        agent: ownerAddress
+          ? {
+              ...draft.agent,
+              walletAddress: ownerAddress,
+            }
+          : draft.agent,
         createdAt: new Date().toISOString(),
       };
       setArchetype(derivedArchetype);
@@ -163,6 +172,7 @@ export function App() {
       setSubmitting(false);
     }
   }
+  void isConnected;
 
   function jumpToArcade() {
     arcadeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -437,11 +447,7 @@ export function App() {
           subtitle="Live arcade"
           accent="warn"
         >
-          <BirthArcade
-            disabled={submitting}
-            playerName={playerName}
-            onComplete={handleComplete}
-          />
+          <BirthArcade disabled={submitting} onComplete={handleComplete} />
           {error ? <p className="error-banner">{error}</p> : null}
           {submitting ? (
             <p className="status-banner">Forging agent from play log…</p>
@@ -486,8 +492,9 @@ function NavBar({ onPlay }: { onPlay: () => void }) {
           GitHub
         </a>
       </div>
+      <ConnectButton />
       <button type="button" className="nav-cta" onClick={onPlay}>
-        ▶ Play demo
+        ▶ Play
       </button>
     </nav>
   );

@@ -1,4 +1,9 @@
-import type { MoaiId, PlayEvent, PlayLog } from '@openagents/shared/browser';
+import type {
+  Capsule,
+  MoaiId,
+  PlayEvent,
+  PlayLog,
+} from '@openagents/shared/browser';
 import { CHAINS, type ChainId } from './chains';
 import { drawBigText, pixelText } from './font';
 import { PAL, PLAY_H, RH, RW } from './palette';
@@ -24,12 +29,11 @@ import {
 // ----------------------------------------------------------------------
 // MARIO 1-1 DESIGN PHILOSOPHY
 // ----------------------------------------------------------------------
-// 1) The first enemy is slow, alone, in the middle, in one color.
-//    Players auto-fire (no fire button to learn) and destroy it.
-//    A floating "+1 SAFE" teaches the entire scoring loop in 2 seconds.
-// 2) After the tutorial wave, all 3 colors mix.
-// 3) At ~30s the first Moai descends — players learn "dodge".
-// 4) At 60s, the highest-scoring color becomes the agent archetype.
+// 1) The first enemy is a SHIELD module. Destroying it visibly commits a
+//    circuit breaker into the Agent loadout.
+// 2) Later waves add SPEED / OPTION / LASER / MISSILE modules with higher cost.
+// 3) Moai are production constraints: gas, latency, MEV, oracle drift, peer drift.
+// 4) At 60s, committed modules derive the Agent profile and DeFi policy.
 //
 // No power-up bar. No "commit" button. No manual.
 // ----------------------------------------------------------------------
@@ -65,11 +69,91 @@ export const ARCHETYPE_GLYPH: Record<Archetype, string> = {
   aggressive: 'RISK',
 };
 
-// Enemies are color-coded by archetype. Each color has its own behavior +
-// reward + risk profile. The KEY GAME DESIGN INSIGHT: shooting RISK enemies
-// hurts you (they fire back). So "shoot everything" is mathematically wrong.
-// You can't survive 60s of RISK shots. You have to choose your style.
-interface EnemyColor {
+type Capability = Exclude<Capsule, 'double'>;
+
+export const CAPABILITY_ORDER: Capability[] = [
+  'shield',
+  'speed',
+  'option',
+  'laser',
+  'missile',
+];
+
+export const CAPABILITY_LABEL: Record<Capability, string> = {
+  shield: 'SHIELD',
+  speed: 'SPEED',
+  option: 'OPTION',
+  laser: 'LASER',
+  missile: 'MISSILE',
+};
+
+export const CAPABILITY_HUD_LABEL: Record<Capability, string> = {
+  shield: 'SHLD',
+  speed: 'SPD',
+  option: 'OPT',
+  laser: 'LSR',
+  missile: 'MSL',
+};
+
+export const CAPABILITY_DESC: Record<Capability, string> = {
+  shield: 'CIRCUIT BREAKER',
+  speed: 'L2 FAST EXEC',
+  option: 'AXL PEER NODE',
+  laser: '0G REASONING',
+  missile: 'UNISWAP ROUTER',
+};
+
+export const CAPABILITY_COLOR: Record<Capability, string> = {
+  shield: '#7bdff2',
+  speed: '#ff8db3',
+  option: '#40f070',
+  laser: '#ff5252',
+  missile: '#c084ff',
+};
+
+const CAPABILITY_BAR_POSITION: Record<Capability, number> = {
+  speed: 0,
+  missile: 1,
+  laser: 3,
+  option: 4,
+  shield: 5,
+};
+
+const MOAI_CONSTRAINT: Record<
+  MoaiId,
+  { label: string; detail: string; capability: Capability }
+> = {
+  aegis: {
+    label: 'GAS WALL',
+    detail: 'caps position size',
+    capability: 'shield',
+  },
+  razor: {
+    label: 'MEV RAZOR',
+    detail: 'punishes sloppy swaps',
+    capability: 'laser',
+  },
+  oracle: {
+    label: 'ORACLE DRIFT',
+    detail: 'forces market checks',
+    capability: 'missile',
+  },
+  comet: {
+    label: 'LATENCY COMET',
+    detail: 'demands fast execution',
+    capability: 'speed',
+  },
+  hive: {
+    label: 'PEER DRIFT',
+    detail: 'tests AXL coordination',
+    capability: 'option',
+  },
+};
+
+// Enemies are Agent capability modules, not decorative characters. Destroying
+// one records a capsule + commit, so the arcade loop directly changes policy.
+interface EnemyCapability {
+  capability: Capability;
   archetype: Archetype;
   color: string;
   flashColor: string;
@@ -79,10 +163,11 @@ interface EnemyColor {
   aggression: 0 | 1 | 2;
 }
 
-const ENEMY_COLORS: readonly [EnemyColor, EnemyColor, EnemyColor] = [
+const ENEMY_CAPABILITIES: readonly EnemyCapability[] = [
   {
+    capability: 'shield',
     archetype: 'conservative',
-    color: '#7bdff2',
+    color: CAPABILITY_COLOR.shield,
     flashColor: '#a0f8ff',
     scoreOnKill: 50,
     aggression: 0,
@@ -95,31 +180,63 @@ const ENEMY_COLORS: readonly [EnemyColor, EnemyColor, EnemyColor] = [
     },
   },
   {
+    capability: 'speed',
     archetype: 'balanced',
-    color: '#f8d840',
-    flashColor: '#fff5b0',
-    scoreOnKill: 150,
+    color: CAPABILITY_COLOR.speed,
+    flashColor: '#ffc2d9',
+    scoreOnKill: 120,
     aggression: 1,
     spriteKey: {
       ...GRUNT_KEY,
-      O: '#f8d840',
-      Y: '#fff5b0',
+      O: CAPABILITY_COLOR.speed,
+      Y: '#ffc2d9',
       W: '#fefae0',
-      B: '#a8841a',
+      B: '#92345d',
     },
   },
   {
+    capability: 'option',
+    archetype: 'balanced',
+    color: CAPABILITY_COLOR.option,
+    flashColor: '#a8ffbd',
+    scoreOnKill: 180,
+    aggression: 1,
+    spriteKey: {
+      ...GRUNT_KEY,
+      O: CAPABILITY_COLOR.option,
+      Y: '#a8ffbd',
+      W: '#fefae0',
+      B: '#127a35',
+    },
+  },
+  {
+    capability: 'laser',
     archetype: 'aggressive',
-    color: '#ff5252',
+    color: CAPABILITY_COLOR.laser,
     flashColor: '#ffb3b3',
-    scoreOnKill: 400,
+    scoreOnKill: 320,
     aggression: 2,
     spriteKey: {
       ...GRUNT_KEY,
-      O: '#ff5252',
+      O: CAPABILITY_COLOR.laser,
       Y: '#ffb3b3',
       W: '#fefae0',
       B: '#7a1a1a',
+    },
+  },
+  {
+    capability: 'missile',
+    archetype: 'aggressive',
+    color: CAPABILITY_COLOR.missile,
+    flashColor: '#dec0ff',
+    scoreOnKill: 260,
+    aggression: 2,
+    spriteKey: {
+      ...GRUNT_KEY,
+      O: CAPABILITY_COLOR.missile,
+      Y: '#dec0ff',
+      W: '#fefae0',
+      B: '#4d247a',
     },
   },
 ];
@@ -146,6 +263,7 @@ interface Enemy {
   vy: number;
   phase: number;
   hp: number;
+  capability: Capability;
   archetype: Archetype;
   color: string;
   flashColor: string;
@@ -227,6 +345,7 @@ export interface Runtime {
   events: PlayEvent[];
   score: number;
   votes: Record<Archetype, number>;
+  loadout: Record<Capability, number>;
   chain: ChainId;
   nextEnemyAt: number;
   nextMoaiAt: number;
@@ -243,6 +362,8 @@ export interface Runtime {
   tutorialStep: number;
   nextTutorialAt: number;
   archetypePeek: Archetype;
+  lastCommit: Capability | null;
+  lastCommitT: number;
 }
 
 export function createRuntime(chain: ChainId = 'ARB'): Runtime {
@@ -260,6 +381,7 @@ export function createRuntime(chain: ChainId = 'ARB'): Runtime {
     events: [],
     score: 0,
     votes: { conservative: 0, balanced: 0, aggressive: 0 },
+    loadout: { shield: 0, speed: 0, option: 0, laser: 0, missile: 0 },
     chain,
     nextEnemyAt: 60,
     nextMoaiAt: 60 * 25,
@@ -276,18 +398,20 @@ export function createRuntime(chain: ChainId = 'ARB'): Runtime {
     tutorialStep: 0,
     nextTutorialAt: 30,
     archetypePeek: 'balanced',
+    lastCommit: null,
+    lastCommitT: 0,
   };
 }
 
-function enemyAssetLabel(archetype: Archetype): string {
-  switch (archetype) {
-    case 'conservative':
-      return 'STABLE';
-    case 'balanced':
-      return 'YIELD';
-    case 'aggressive':
-      return 'MEME';
+function capabilityById(capability: Capability): EnemyCapability {
+  const spec = ENEMY_CAPABILITIES.find(
+    (candidate) => candidate.capability === capability
+  );
+  if (!spec) {
+    throw new Error(`Unknown capability: ${capability}`);
   }
+
+  return spec;
 }
 
 function elapsedMs(rt: Runtime) {
@@ -323,20 +447,27 @@ function spawnBurst(
   }
 }
 
-function pickEnemyColor(rt: Runtime): EnemyColor {
-  const idx = rt.enemyCounter % ENEMY_COLORS.length;
-  if (idx === 0) return ENEMY_COLORS[0];
-  if (idx === 1) return ENEMY_COLORS[1];
-  return ENEMY_COLORS[2];
+function pickEnemyCapability(rt: Runtime): EnemyCapability {
+  const capability =
+    CAPABILITY_ORDER[rt.enemyCounter % CAPABILITY_ORDER.length] ?? 'shield';
+  return capabilityById(capability);
+}
+
+function commitCapability(rt: Runtime, capability: Capability, t: number) {
+  rt.loadout[capability] += 1;
+  rt.lastCommit = capability;
+  rt.lastCommitT = rt.t;
+  const position = CAPABILITY_BAR_POSITION[capability];
+  rt.events.push({ kind: 'capsule', t, capsule: capability });
+  rt.events.push({ kind: 'barAdvance', t, position });
+  rt.events.push({ kind: 'commit', t, position, capsule: capability });
 }
 
 function spawnTutorialEnemy(rt: Runtime) {
-  // First: a slow, passive BLUE — player shoots, gets +50 SAFE, learns
-  //        "shooting feels good".
-  // Then 90 frames later, a slow RED appears. Player auto-fires it,
-  //        eats a return-bullet, learns "RED bites back".
+  // First: SHIELD teaches "shoot = commit a policy module".
+  // Then LASER bites back, so the player learns stronger modules carry cost.
   const slot = rt.tutorialStep;
-  const color = slot === 0 ? ENEMY_COLORS[0] : ENEMY_COLORS[2];
+  const spec = slot === 0 ? capabilityById('shield') : capabilityById('laser');
   rt.enemies.push({
     type: 'grunt',
     id: `tutorial-${rt.enemyCounter}-${slot}`,
@@ -346,12 +477,13 @@ function spawnTutorialEnemy(rt: Runtime) {
     vy: 0,
     phase: 0,
     hp: 1,
-    archetype: color.archetype,
-    color: color.color,
-    flashColor: color.flashColor,
-    spriteKey: color.spriteKey,
-    scoreOnKill: color.scoreOnKill,
-    aggression: color.aggression,
+    capability: spec.capability,
+    archetype: spec.archetype,
+    color: spec.color,
+    flashColor: spec.flashColor,
+    spriteKey: spec.spriteKey,
+    scoreOnKill: spec.scoreOnKill,
+    aggression: spec.aggression,
     fireCool: 60,
     spawnAt: rt.t,
     isTutorial: true,
@@ -361,12 +493,12 @@ function spawnTutorialEnemy(rt: Runtime) {
 }
 
 function spawnEnemyWave(rt: Runtime) {
-  // Each wave is a single color, so the player commits to a choice per wave.
-  const colorChoice = pickEnemyColor(rt);
+  // Each wave is one capability, so the player understands each commit.
+  const capabilityChoice = pickEnemyCapability(rt);
   const wave =
-    colorChoice.aggression === 2
-      ? 2 + (rt.enemyCounter % 2) // RED waves are smaller — they're already dangerous
-      : colorChoice.aggression === 1
+    capabilityChoice.aggression === 2
+      ? 2 + (rt.enemyCounter % 2) // high-cost waves are smaller but dangerous
+      : capabilityChoice.aggression === 1
         ? 3 + (rt.enemyCounter % 2)
         : 4 + (rt.enemyCounter % 2);
   const yBase = 30 + ((rt.enemyCounter * 31) % 80);
@@ -376,16 +508,17 @@ function spawnEnemyWave(rt: Runtime) {
       id: `g-${rt.enemyCounter}-${i}`,
       x: RW + 16 + i * 22,
       y: yBase + i * 14 + Math.sin(rt.t * 0.01 + i) * 4,
-      vx: -1.0 - (colorChoice.aggression === 2 ? 0.4 : 0),
+      vx: -1.0 - (capabilityChoice.aggression === 2 ? 0.4 : 0),
       vy: 0,
       phase: rt.t * 0.02 + i,
       hp: 1,
-      archetype: colorChoice.archetype,
-      color: colorChoice.color,
-      flashColor: colorChoice.flashColor,
-      spriteKey: colorChoice.spriteKey,
-      scoreOnKill: colorChoice.scoreOnKill,
-      aggression: colorChoice.aggression,
+      capability: capabilityChoice.capability,
+      archetype: capabilityChoice.archetype,
+      color: capabilityChoice.color,
+      flashColor: capabilityChoice.flashColor,
+      spriteKey: capabilityChoice.spriteKey,
+      scoreOnKill: capabilityChoice.scoreOnKill,
+      aggression: capabilityChoice.aggression,
       fireCool: 60 + i * 18,
       spawnAt: rt.t,
       isTutorial: false,
@@ -418,7 +551,8 @@ function spawnNextMoai(rt: Runtime) {
     spawnAt: rt.t,
   });
   rt.warningT = 90;
-  pushToast(rt, 'WARNING · DODGE THE MOAI', PAL.warn);
+  const constraint = MOAI_CONSTRAINT[moaiId];
+  pushToast(rt, `${constraint.label} INBOUND`, PAL.warn);
 }
 
 export function step(rt: Runtime, input: InputState) {
@@ -428,10 +562,9 @@ export function step(rt: Runtime, input: InputState) {
   if (rt.warningT > 0) rt.warningT -= 1;
   if (rt.flashT > 0) rt.flashT -= 1;
 
-  // Tutorial — Mario 1-1 sequencing:
-  //   step 0 (frame 30): a slow BLUE drifts in. Player auto-shoots → +SAFE.
-  //   step 1 (frame 30+150): a slow RED drifts in. Player auto-shoots → +RISK
-  //                          AND eats a return-bullet → understands cost.
+  // Tutorial sequencing:
+  //   step 0: a slow SHIELD drifts in. Player auto-shoots -> circuit breaker.
+  //   step 1: a LASER drifts in and fires back -> precision has operational cost.
   if (rt.tutorialStep < 2 && rt.t >= rt.nextTutorialAt) {
     spawnTutorialEnemy(rt);
     rt.nextTutorialAt = rt.t + 150;
@@ -511,36 +644,45 @@ export function step(rt: Runtime, input: InputState) {
         }
         if (e.hp <= 0) {
           if (e.type === 'moai') {
+            const constraint = MOAI_CONSTRAINT[e.moaiId];
             rt.score += 1500;
             rt.events.push({
               kind: 'moaiKill',
               t: elapsedMs(rt),
               moaiId: e.moaiId,
             });
+            commitCapability(rt, constraint.capability, elapsedMs(rt));
             spawnBurst(rt, e.x + 12, e.y + 14, '#ffd166', 50);
-            pushToast(rt, `${e.moaiId.toUpperCase()} DEFEATED`, PAL.hudYellow);
+            pushToast(
+              rt,
+              `${constraint.capability.toUpperCase()} COMMITTED`,
+              PAL.hudYellow
+            );
             rt.scorePops.push({
               x: e.x + 12,
               y: e.y + 14,
-              text: '+1500',
+              text: `+1500 ${CAPABILITY_HUD_LABEL[constraint.capability]}`,
               color: PAL.hudYellow,
               life: 1.4,
             });
           } else {
-            // Vote for archetype, score scales with risk
+            // Commit the capability into the Agent policy; score scales by cost.
             rt.votes[e.archetype] += 1;
             rt.score += e.scoreOnKill;
+            commitCapability(rt, e.capability, elapsedMs(rt));
             rt.events.push({
               kind: 'shoot',
               t: elapsedMs(rt),
               enemyId: e.id,
-              tradeoffLabel: ARCHETYPE_GLYPH[e.archetype],
+              tradeoffLabel: `${CAPABILITY_LABEL[e.capability]} / ${
+                CAPABILITY_DESC[e.capability]
+              }`,
             });
             spawnBurst(rt, e.x + 4, e.y + 4, e.flashColor, 14);
             rt.scorePops.push({
               x: e.x + 4,
               y: e.y + 4,
-              text: `+${e.scoreOnKill} ${ARCHETYPE_GLYPH[e.archetype]}`,
+              text: `+${e.scoreOnKill} ${CAPABILITY_HUD_LABEL[e.capability]}`,
               color: e.color,
               life: 1.0,
             });
@@ -557,7 +699,7 @@ export function step(rt: Runtime, input: InputState) {
           kind: 'pass',
           t: elapsedMs(rt),
           enemyId: e.id,
-          tradeoffLabel: ARCHETYPE_GLYPH[e.archetype],
+          tradeoffLabel: `SKIP ${CAPABILITY_LABEL[e.capability]}`,
         });
       }
       return false;
@@ -565,7 +707,7 @@ export function step(rt: Runtime, input: InputState) {
     return true;
   });
 
-  // Enemy update + per-color firing behavior
+  // Enemy update + per-capability firing behavior
   for (const e of rt.enemies) {
     if (e.type === 'grunt') {
       e.x += e.vx;
@@ -837,7 +979,7 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
         ctx.globalAlpha = 1;
       }
       drawSprite(ctx, GRUNT, e.spriteKey, e.x | 0, e.y | 0);
-      // Floating identity label so the player learns what each color *means*.
+      // Floating identity label so the player learns what each module means.
       // Visible for the first ~1.5s of life or while the tutorial is on.
       const labelAge = rt.t - e.spawnAt;
       const showLabel = labelAge < 90 || e.isTutorial;
@@ -846,27 +988,38 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
           ? 1
           : Math.max(0, Math.min(1, (90 - labelAge) / 30));
         ctx.globalAlpha = alpha;
-        const label = enemyAssetLabel(e.archetype);
-        const reward = `+${e.scoreOnKill}`;
-        const lx = (e.x | 0) - Math.floor((label.length * 6) / 2) + 6;
+        const label = CAPABILITY_LABEL[e.capability];
+        const detail = CAPABILITY_DESC[e.capability];
+        const reward = `COMMIT +${e.scoreOnKill}`;
+        const labelW =
+          Math.max(label.length, detail.length, reward.length) * 6 + 4;
+        const desiredX = (e.x | 0) - Math.floor(labelW / 2) + 6;
+        const lx = Math.max(2, Math.min(RW - labelW - 2, desiredX));
         const ly = (e.y | 0) - 16;
         // Background plate so the label stays readable on busy backgrounds.
         ctx.fillStyle = 'rgba(0, 16, 42, 0.85)';
-        ctx.fillRect(lx - 2, ly - 1, label.length * 6 + 4, 9);
+        ctx.fillRect(lx - 2, ly - 1, labelW, 25);
         pixelText(ctx, label, lx, ly, e.color);
-        const ry = ly + 8;
-        pixelText(
-          ctx,
-          reward,
-          (e.x | 0) + 6 - Math.floor((reward.length * 6) / 2),
-          ry,
-          PAL.hudYellow
-        );
+        pixelText(ctx, detail, lx, ly + 8, PAL.hudWhite);
+        pixelText(ctx, reward, lx, ly + 16, PAL.hudYellow);
         ctx.globalAlpha = 1;
       }
     } else {
       const key = e.chargeT > 0 ? MOAI_CHARGE_KEY : MOAI_KEY;
       drawSprite(ctx, MOAI, key, e.x | 0, e.y | 0, false, e.fromTop);
+      const constraint = MOAI_CONSTRAINT[e.moaiId];
+      const labelY = e.fromTop ? (e.y | 0) + 32 : (e.y | 0) - 18;
+      const labelX = Math.max(2, Math.min(RW - 86, (e.x | 0) - 28));
+      ctx.fillStyle = 'rgba(0, 16, 42, 0.82)';
+      ctx.fillRect(labelX - 2, labelY - 1, 88, 17);
+      pixelText(ctx, constraint.label, labelX, labelY, PAL.warn);
+      pixelText(
+        ctx,
+        constraint.detail.toUpperCase(),
+        labelX,
+        labelY + 8,
+        PAL.hudWhite
+      );
       const ratio = Math.max(0, e.hp / e.maxHp);
       ctx.fillStyle = PAL.deepBlue;
       ctx.fillRect((e.x | 0) - 2, (e.y | 0) - 4, 28, 2);
@@ -923,7 +1076,7 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
     if (flicker) {
       ctx.fillStyle = 'rgba(255, 48, 96, 0.32)';
       ctx.fillRect(0, PLAY_H / 2 - 14, RW, 28);
-      drawBigText(ctx, 'DODGE!', RW / 2 - 36, PLAY_H / 2 - 7, PAL.warn);
+      drawBigText(ctx, 'CONSTRAINT!', RW / 2 - 66, PLAY_H / 2 - 7, PAL.warn);
     }
   }
 
@@ -938,35 +1091,36 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
 }
 
 function drawHud(ctx: CanvasRenderingContext2D, rt: Runtime) {
-  // Top bar — vote counts (the only HUD that matters)
+  // Top bar: the current Agent loadout, not a generic score board.
   ctx.fillStyle = 'rgba(0, 16, 42, 0.92)';
-  ctx.fillRect(0, 0, RW, 14);
-  const slotW = (RW - 8) / 3;
-  for (let i = 0; i < ARCHETYPE_ORDER.length; i += 1) {
-    const archetype = ARCHETYPE_ORDER[i];
-    if (!archetype) continue;
+  ctx.fillRect(0, 0, RW, 16);
+  const slotW = (RW - 8) / CAPABILITY_ORDER.length;
+  for (let i = 0; i < CAPABILITY_ORDER.length; i += 1) {
+    const capability = CAPABILITY_ORDER[i];
+    if (!capability) continue;
     const x = 4 + i * slotW;
-    const isLeader = rt.archetypePeek === archetype && rt.score > 0;
-    const color = ARCHETYPE_COLOR[archetype];
-    ctx.fillStyle = isLeader ? color : 'rgba(255,255,255,0.06)';
-    ctx.fillRect(x, 2, slotW - 4, 10);
-    if (!isLeader) {
+    const color = CAPABILITY_COLOR[capability];
+    const count = rt.loadout[capability];
+    const isRecent = rt.lastCommit === capability && rt.t - rt.lastCommitT < 75;
+    ctx.fillStyle = isRecent ? color : 'rgba(255,255,255,0.06)';
+    ctx.fillRect(x, 2, slotW - 3, 12);
+    if (!isRecent) {
       ctx.fillStyle = color;
-      ctx.fillRect(x, 2, 3, 10);
+      ctx.fillRect(x, 2, 2, 12);
     }
     pixelText(
       ctx,
-      ARCHETYPE_GLYPH[archetype],
-      x + 6,
+      CAPABILITY_HUD_LABEL[capability],
+      x + 4,
       4,
-      isLeader ? PAL.black : color
+      isRecent ? PAL.black : color
     );
     pixelText(
       ctx,
-      String(rt.votes[archetype]).padStart(2, '0'),
-      x + slotW - 18,
+      String(count).padStart(2, '0'),
+      x + slotW - 15,
       4,
-      isLeader ? PAL.black : PAL.hudWhite
+      isRecent ? PAL.black : PAL.hudWhite
     );
   }
 
@@ -992,6 +1146,14 @@ function drawHud(ctx: CanvasRenderingContext2D, rt: Runtime) {
     92,
     PLAY_H + 16,
     PAL.hudYellow
+  );
+  pixelText(ctx, 'MODE', 146, PLAY_H + 16, PAL.hudWhite);
+  pixelText(
+    ctx,
+    ARCHETYPE_LABEL[rt.archetypePeek].slice(0, 8),
+    174,
+    PLAY_H + 16,
+    ARCHETYPE_COLOR[rt.archetypePeek]
   );
 
   // Arrow keys glyph (Mario 1-1 visual hint that survives only first 3s)
@@ -1030,12 +1192,3 @@ function drawTinyShip(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.fillStyle = PAL.shipFlame;
   ctx.fillRect(x - 1, y + 3, 1, 1);
 }
-
-// Compatibility shims (no-ops; the new design has no power-up bar)
-export function commit(_rt: Runtime) {
-  // no-op kept for callers
-}
-export function setChain(rt: Runtime, chain: ChainId) {
-  rt.chain = chain;
-}
-export const TOTAL_FRAMES = GAME_DURATION_FRAMES;

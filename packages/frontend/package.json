@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@openagents/shared": "workspace:*",
+    "@tanstack/react-query": "^5.62.7",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "viem": "^2.21.55",
+    "wagmi": "^2.14.7"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

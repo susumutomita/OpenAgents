@@ -62,15 +62,33 @@ dev:
 	bun run dev
 
 # Multi-chain contract deploy (Foundry).
-# Set PRIVATE_KEY plus the matching *_RPC_URL for each network you target.
-# Example: make deploy NETWORK=sepolia
+#
+# Signing: this Makefile NEVER takes a raw private key. Pick one mode:
+#
+#   1) Encrypted keystore (recommended):
+#        cast wallet import deployer --interactive          # one-time
+#        make deploy NETWORK=sepolia ACCOUNT=deployer SENDER=0xYourAddress
+#
+#   2) Ledger hardware wallet:
+#        make deploy NETWORK=sepolia LEDGER=1 SENDER=0xYourAddress
+#
+#   3) Interactive prompt (key kept in memory, never on disk):
+#        make deploy NETWORK=sepolia INTERACTIVE=1
+#
+# RPC URL is sourced from <NETWORK>_RPC_URL env var (e.g. SEPOLIA_RPC_URL).
+
+NETWORK_UPPER = $(shell echo $(NETWORK) | tr a-z A-Z)
+SIGNER_FLAGS = $(if $(LEDGER),--ledger,$(if $(TREZOR),--trezor,$(if $(INTERACTIVE),--interactive,$(if $(ACCOUNT),--account $(ACCOUNT),$(error No signer specified — pass ACCOUNT=name OR LEDGER=1 OR TREZOR=1 OR INTERACTIVE=1)))))
+SENDER_FLAG = $(if $(SENDER),--sender $(SENDER),)
+
 .PHONY: deploy
 deploy:
 	cd contracts && forge script script/Deploy.s.sol:Deploy \
-		--rpc-url $(or $(RPC_URL),$$($(shell echo $(NETWORK) | tr a-z A-Z)_RPC_URL)) \
+		--rpc-url $${$(NETWORK_UPPER)_RPC_URL:?missing $(NETWORK_UPPER)_RPC_URL} \
 		--broadcast \
 		--verify \
-		--chain $(NETWORK)
+		--chain $(NETWORK) \
+		$(SIGNER_FLAGS) $(SENDER_FLAG)
 
 .PHONY: deploy_all
 deploy_all:
