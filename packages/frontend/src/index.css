@@ -1797,3 +1797,200 @@ button {
     align-items: stretch;
   }
 }
+
+@media (max-width: 600px) {
+  .nav {
+    gap: 12px;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .nav-cta {
+    margin-left: auto;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .hero-grand {
+    padding: 32px 16px 24px;
+  }
+
+  .hero-grand h1 {
+    font-size: clamp(36px, 11vw, 56px);
+  }
+
+  .hero-lede {
+    font-size: 15px;
+  }
+
+  .hero-cta {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .hero-cta .primary-button,
+  .hero-cta .ghost-button {
+    justify-self: stretch;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .hero-form {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    gap: 6px;
+  }
+
+  .hero-mock {
+    height: 160px;
+  }
+
+  .hero-mock-moai {
+    width: 64px;
+    height: 80px;
+  }
+
+  .landing-section {
+    padding: 36px 16px;
+  }
+
+  .landing-section-head {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .landing-section-head h2 {
+    font-size: clamp(22px, 6vw, 32px);
+  }
+
+  .lede {
+    font-size: 15px;
+  }
+
+  .step-num {
+    font-size: 28px;
+  }
+
+  .pipeline,
+  .flow-row {
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .flow-chip {
+    padding: 10px 14px;
+    font-size: 11px;
+  }
+
+  .diff-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 14px;
+  }
+
+  .diff-row.diff-head {
+    display: none;
+  }
+
+  .diff-row .diff-bad::before {
+    content: "Traditional · ";
+    color: rgba(254, 250, 224, 0.5);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+  }
+
+  .diff-row .diff-good::before {
+    content: "Ours · ";
+    color: rgba(254, 250, 224, 0.5);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+  }
+
+  .quote-card {
+    padding: 18px 20px;
+    font-size: 16px;
+  }
+
+  .arcade-panel {
+    padding: 16px;
+  }
+
+  .arcade-controls-top {
+    gap: 6px;
+  }
+
+  .hint-pill {
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+
+  .arcade-card {
+    padding: 18px 20px;
+    max-width: 100%;
+  }
+
+  .arcade-card h3 {
+    font-size: 1.3rem;
+  }
+
+  .trade-feed li {
+    grid-template-columns: 44px 64px 1fr auto;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .alloc-row {
+    grid-template-columns: 48px 1fr 44px;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .combat-power {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 14px 16px;
+  }
+
+  .combat-power strong {
+    font-size: 1.6rem;
+  }
+
+  .panel,
+  .arcade-card {
+    border-radius: 18px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .identity-list div {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .final-cta {
+    padding: 40px 16px;
+  }
+
+  .landing-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 16px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .archetype-row {
+    grid-template-columns: 1fr;
+  }
+}
