@@ -55,10 +55,7 @@ architecture_harness:
 	bun scripts/architecture-harness.ts --staged --fail-on=error
 
 .PHONY: before-commit
-# typecheck / test / build は各 workspace が該当 script を持つ前提に依存するため、本テンプレートの
-# 既定ゲートには含めない。利用プロジェクト側で `before-commit: ... typecheck test build` のように
-# 拡張するか、"no script ならスキップ" 型 runner を用意して取り込むこと。
-before-commit: architecture_harness lint_text lint
+before-commit: architecture_harness lint_text lint typecheck test build
 
 .PHONY: dev
 dev:

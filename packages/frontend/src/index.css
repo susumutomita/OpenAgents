@@ -1,0 +1,520 @@
+:root {
+  font-family: "Space Grotesk", "IBM Plex Sans JP", sans-serif;
+  color: #fefae0;
+  background: radial-gradient(
+      circle at top left,
+      rgba(250, 237, 205, 0.16),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(255, 107, 107, 0.18),
+      transparent 26%
+    ), linear-gradient(135deg, #081420 0%, #13293d 45%, #601848 100%);
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  width: min(1240px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 32px 0 72px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  margin: 8px 0 12px;
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+}
+
+.hero p {
+  max-width: 64ch;
+  margin: 0;
+  color: rgba(254, 250, 224, 0.82);
+}
+
+.hero-kicker,
+.eyebrow {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(123, 223, 242, 0.18);
+  color: #bde0fe;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.hero-card,
+.panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(9, 12, 18, 0.64);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.hero-card {
+  padding: 20px;
+  border-radius: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.hero-card label {
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(254, 250, 224, 0.74);
+}
+
+.hero-card input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fefae0;
+}
+
+.status-banner,
+.error-banner {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.status-banner {
+  background: rgba(0, 245, 212, 0.14);
+  color: #cbf3f0;
+}
+
+.error-banner {
+  background: rgba(255, 107, 107, 0.14);
+  color: #ffd6d6;
+}
+
+.panel {
+  border-radius: 28px;
+  padding: 20px;
+}
+
+.panel-header {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: clamp(1.4rem, 2vw, 2rem);
+}
+
+.arcade-panel {
+  margin-bottom: 24px;
+}
+
+.arcade-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #040716;
+}
+
+.arcade-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #040716;
+  image-rendering: pixelated;
+}
+
+.arcade-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(4, 7, 22, 0.55),
+    rgba(4, 7, 22, 0.92)
+  );
+  backdrop-filter: blur(2px);
+}
+
+.arcade-card {
+  max-width: 520px;
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: rgba(4, 7, 22, 0.92);
+  border: 1px solid rgba(123, 223, 242, 0.28);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  display: grid;
+  gap: 14px;
+  text-align: left;
+}
+
+.arcade-card h3 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+
+.arcade-card ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.arcade-card p {
+  margin: 0;
+  color: rgba(254, 250, 224, 0.82);
+  line-height: 1.55;
+}
+
+.arcade-card kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.08);
+  font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.arcade-hint {
+  font-size: 0.86rem;
+  color: rgba(254, 250, 224, 0.6);
+}
+
+.primary-button {
+  justify-self: start;
+  padding: 14px 22px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #ffd166, #ff6b6b);
+  color: #081420;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.primary-button:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.arcade-countdown {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+}
+
+.arcade-countdown span {
+  font-size: clamp(6rem, 12vw, 10rem);
+  font-weight: 800;
+  color: #ffd166;
+  text-shadow: 0 6px 32px rgba(255, 209, 102, 0.5);
+  line-height: 1;
+}
+
+.arcade-countdown small {
+  letter-spacing: 0.4em;
+  color: rgba(254, 250, 224, 0.7);
+  font-size: 0.9rem;
+}
+
+.arcade-debrief .arcade-card {
+  text-align: center;
+  border-color: rgba(128, 237, 153, 0.4);
+}
+
+.arcade-summary {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.arcade-summary div {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  gap: 4px;
+}
+
+.arcade-summary span {
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.6);
+}
+
+.arcade-summary strong {
+  font-size: 1rem;
+  color: #fefae0;
+}
+
+.hud-grid,
+.policy-metrics,
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.hud-grid div,
+.policy-metrics div,
+.stats-grid div,
+.node-card {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  gap: 4px;
+}
+
+.hud-grid span,
+.policy-metrics span,
+.stats-grid span,
+.identity-list dt,
+.feed-list span,
+.node-card span {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(254, 250, 224, 0.64);
+}
+
+.hud-grid strong,
+.policy-metrics strong,
+.stats-grid strong,
+.identity-list dd,
+.node-card strong {
+  font-size: 1.05rem;
+}
+
+.power-bar {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.power-slot {
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+}
+
+.power-slot.active {
+  background: linear-gradient(
+    135deg,
+    rgba(123, 223, 242, 0.26),
+    rgba(255, 209, 102, 0.24)
+  );
+  border-color: rgba(255, 209, 102, 0.56);
+  color: #081420;
+  font-weight: 700;
+}
+
+.arcade-footer {
+  margin-top: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arcade-footer p {
+  margin: 0;
+  color: rgba(254, 250, 224, 0.82);
+}
+
+.arcade-footer button {
+  min-width: 180px;
+  padding: 14px 18px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #ffd166, #ff6b6b);
+  color: #081420;
+  font-weight: 700;
+}
+
+.arcade-footer button:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.radar-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.combat-power {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.combat-power strong {
+  font-size: 2rem;
+}
+
+.radar-svg {
+  width: 100%;
+  max-width: 340px;
+  justify-self: center;
+}
+
+.radar-ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.radar-axis {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+
+.radar-label {
+  fill: rgba(254, 250, 224, 0.72);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.radar-shape {
+  fill: rgba(123, 223, 242, 0.28);
+  stroke: #7bdff2;
+  stroke-width: 2;
+}
+
+.identity-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.identity-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.identity-list dd {
+  margin: 0;
+  text-align: right;
+}
+
+.highlight-list,
+.feed-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.highlight-list li,
+.feed-list li {
+  color: rgba(254, 250, 224, 0.88);
+}
+
+.node-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.node-card em {
+  font-style: normal;
+  color: #80ed99;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+}
+
+.feed-panel {
+  grid-column: 1 / -1;
+}
+
+.feed-list li {
+  display: grid;
+  gap: 4px;
+}
+
+.feed-list p {
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .hero,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hud-grid,
+  .policy-metrics,
+  .stats-grid,
+  .node-grid,
+  .power-bar,
+  .arcade-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arcade-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
