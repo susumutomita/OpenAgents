@@ -6,12 +6,20 @@ import {AgentForgeINFT} from "../src/AgentForgeINFT.sol";
 import {AgentForgeSubnameRegistry} from "../src/AgentForgeSubnameRegistry.sol";
 
 /// @notice Deploy AgentForgeINFT and AgentForgeSubnameRegistry to the active chain.
-/// Set RPC and PRIVATE_KEY via env vars and call:
-///   forge script script/Deploy.s.sol:Deploy --rpc-url $RPC --broadcast
+///
+/// IMPORTANT: This script never reads a private key from the environment. The
+/// signer is supplied by Foundry's CLI via one of:
+///   forge script ... --account <name>       (encrypted keystore)
+///   forge script ... --ledger                (Ledger hardware wallet)
+///   forge script ... --trezor                (Trezor hardware wallet)
+///   forge script ... --interactive           (paste key once, in memory)
+///
+/// One-time setup for keystore-backed signing:
+///   cast wallet import deployer --interactive
+///   make deploy NETWORK=sepolia ACCOUNT=deployer SENDER=0x...
 contract Deploy is Script {
     function run() external {
-        uint256 deployerKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerKey);
+        vm.startBroadcast();
 
         AgentForgeINFT inft = new AgentForgeINFT();
         AgentForgeSubnameRegistry registry = new AgentForgeSubnameRegistry();

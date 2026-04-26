@@ -152,17 +152,19 @@ button {
 
 .arcade-press-start {
   position: absolute;
-  inset: 0;
-  margin: auto;
+  right: 0;
+  bottom: 26px;
+  left: 0;
+  margin: 0 auto;
   width: max-content;
   height: max-content;
-  padding: 14px 28px;
+  padding: 10px 20px;
   border-radius: 999px;
   background: rgba(255, 209, 102, 0.92);
   color: #04060f;
   font-family: "JetBrains Mono", monospace;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   border: 2px solid #fff;
   cursor: pointer;
@@ -956,13 +958,50 @@ button {
 
 .hero-mock-ship {
   position: absolute;
-  left: 12%;
+  left: 10%;
   top: 50%;
-  width: 60px;
-  height: 24px;
-  background: linear-gradient(135deg, #cdebff 0%, #3070d0 50%, #142d5e 100%);
-  clip-path: polygon(100% 50%, 0 0, 0 100%);
-  filter: drop-shadow(0 0 12px rgba(64, 224, 240, 0.5));
+  width: 92px;
+  height: 36px;
+  background: linear-gradient(90deg, #071735 0%, #4d86d8 50%, #b8d8ff 100%);
+  clip-path: polygon(
+    0 42%,
+    20% 18%,
+    43% 18%,
+    50% 0,
+    62% 30%,
+    84% 38%,
+    100% 50%,
+    84% 62%,
+    62% 70%,
+    50% 100%,
+    43% 82%,
+    20% 82%,
+    0 58%
+  );
+  filter: drop-shadow(0 0 14px rgba(64, 224, 240, 0.46));
+  transform: translateY(-50%);
+}
+
+.hero-mock-ship::before {
+  content: "";
+  position: absolute;
+  left: 48px;
+  top: 11px;
+  width: 18px;
+  height: 9px;
+  background: #63e6ff;
+  clip-path: polygon(0 100%, 28% 0, 100% 35%, 78% 100%);
+}
+
+.hero-mock-ship::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 14px;
+  width: 18px;
+  height: 8px;
+  background: linear-gradient(90deg, rgba(248, 96, 32, 0), #f06020, #f8c020);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
 }
 
 .hero-mock-moai {

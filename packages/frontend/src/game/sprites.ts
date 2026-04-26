@@ -3,33 +3,29 @@ import { PAL } from './palette';
 export type SpriteKey = Record<string, string>;
 export type Sprite = readonly string[];
 
-// Vic Viper — sharp Gradius II silhouette.
-// Hard panel breaks (no fluffy gradient highlights). Pointed nose to the right,
-// vertical tail fin on top, two swept delta wings, twin engine exhaust on left,
-// and a missile pod underneath at the rear.
+// Original execution craft: narrow nose, hard wing planes, small canopy.
+// Keep the silhouette serious and mechanical, not mascot-like or parody-cute.
 export const VIC_VIPER: Sprite = [
-  '...........HH...........', // 0  tail tip
-  '...........HH...........', // 1  tail
-  '..........BHHB..........', // 2  tail base
-  '.......BBBBBHHCC........', // 3  tail to body / upper wing root
-  '....BBBBKKKBBHHCCCCC....', // 4  upper wing
-  '..BBKKSSSCCCCCCCCCCCC...', // 5  upper wing extending right
-  '.BBSSCCCCCCCCCCCCCCCCS..', // 6  fuselage upper / canopy line
-  'F2BBCCCCCCCCCCCCCCCCCCSS', // 7  centerline + nose forward
-  'FFBBCCCCCCCCCCCCCCCCCCCS', // 8  pointed nose tip (pointing right)
-  'F2BBCCCCCCCCCCCCCCCCCCSS', // 9  centerline + nose forward (mirror)
-  '.BBSSCCCCCCCCCCCCCCCCS..', // 10 fuselage lower
-  '..BBKKSSSCCCCCCCCCCCC...', // 11 lower wing extending right
-  '....BBBBKKKBBB.RRR......', // 12 lower wing root + missile pod
-  '...............RR.......', // 13 missile tip
+  '..........HH............',
+  '.........BHHB...........',
+  '.......BBBHHCC..........',
+  '....BBBBKCCCCCC.........',
+  '..BBBKKCCCCCCCCCSS......',
+  'F2BBKCCCCCCCCCCCCCCCS...',
+  'FFBBCCCCCHHHHCCCCCCCCCSS',
+  'F2BBKCCCCCCCCCCCCCCCS...',
+  '..BBBKKCCCCCCCCCSS......',
+  '....BBBBKCCCCCC.........',
+  '...........RRRR.........',
+  '............RR..........',
 ];
 
 export const VIC_KEY: SpriteKey = {
-  C: '#3a7ad8', // hull main
-  S: '#9fc8ff', // panel highlight (used sparingly, leading edges only)
-  B: '#0d1e44', // hull shadow / panel break
-  H: '#5fd0ff', // cockpit / canopy glass
-  K: '#22386b', // wing inner shadow
+  C: '#4d86d8', // hull main
+  S: '#b8d8ff', // hard leading edge
+  B: '#071735', // hull shadow / panel break
+  H: '#63e6ff', // compact canopy glass
+  K: '#1b2f63', // wing inner shadow
   T: '#0d1e44',
   R: '#e02030', // missile body (red)
   F: PAL.shipFlame,

@@ -113,23 +113,47 @@ make before-commit       # lint_text + lint + typecheck + tests + build
 
 ## Multi-chain contract deploy
 
+> **No raw private keys in `.env`.** Signing always goes through Foundry's
+> CLI flags — encrypted keystore, hardware wallet, or interactive prompt —
+> never a plaintext key on disk.
+
 ```bash
-# .env (gitignored)
-PRIVATE_KEY=0x...
+# RPC + verification keys only — no PRIVATE_KEY here.
 SEPOLIA_RPC_URL=https://...
 BASE_SEPOLIA_RPC_URL=https://...
 OP_SEPOLIA_RPC_URL=https://...
 ARBITRUM_SEPOLIA_RPC_URL=https://...
 ETHERSCAN_API_KEY=...
+```
 
-# Single network
-make deploy NETWORK=sepolia
+Pick one of the three signing modes:
 
-# All testnets at once
+```bash
+# 1) Encrypted keystore (recommended) — one-time setup
+cast wallet import deployer --interactive
+make deploy NETWORK=sepolia ACCOUNT=deployer SENDER=0xYourAddress
+
+# 2) Ledger hardware wallet
+make deploy NETWORK=sepolia LEDGER=1 SENDER=0xYourAddress
+
+# 3) Interactive (key kept only in memory, never written to disk)
+make deploy NETWORK=sepolia INTERACTIVE=1
+
+# Or hit every chain in one shot
 make deploy_all
 ```
 
-Foundry script `contracts/script/Deploy.s.sol` deploys both `AgentForgeINFT.sol` and `AgentForgeSubnameRegistry.sol` in a single transaction per network. RPC endpoints are wired via `contracts/foundry.toml`.
+`Deploy.s.sol` deploys `AgentForgeINFT.sol` + `AgentForgeSubnameRegistry.sol`
+per chain in a single broadcast. RPCs are wired via `contracts/foundry.toml`.
+
+### Frontend wallet (in-app)
+
+The frontend uses **wagmi + viem** for wallet connection. The Connect Wallet
+button in the nav bar speaks the standard EIP-1193 protocol — MetaMask /
+Coinbase Wallet / any injected provider connects natively, and chain
+switching to Sepolia / Base Sepolia / OP Sepolia / Arbitrum Sepolia happens
+in-app. The connected address becomes the agent's owner address; no
+in-browser private key derivation is used for live signing.
 
 ---
 
