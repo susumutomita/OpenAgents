@@ -1,6 +1,6 @@
 # Plan
 
-## Gradius Web3 — 2026-04-26
+## Gr@diusWeb3 — 2026-04-26
 
 ### 目的
 

@@ -1,10 +1,10 @@
-# Gradius Web3 仕様書
+# Gr@diusWeb3 仕様書
 
 ## プロダクト positioning
 
 > **「Play to Design Agents — AI エージェント設計をゲームに変える。」**
 
-AI エージェントの設計は属人的・再現性ゼロ・パラメータ多すぎで、誰も直感的にできない。Gradius Web3 は、Gradius (1985) のモアイステージを UI として使い、**敵の撃ち分け** と **パワーアップバーの commit タイミング** で agent の設計判断を行う。**30〜90 秒** で完了するオンボーディング体験。
+AI エージェントの設計は属人的・再現性ゼロ・パラメータ多すぎで、誰も直感的にできない。Gr@diusWeb3 は、Gradius (1985) のモアイステージを UI として使い、**敵の撃ち分け** と **パワーアップバーの commit タイミング** で agent の設計判断を行う。**30〜90 秒** で完了するオンボーディング体験。
 
 一行コピー: **「Play to Design Agents」**
 
@@ -254,7 +254,7 @@ initialFundingUsdc = computeInitialFunding(playLog) // pure, capped at 100
 
 ## 2 分デモ構成
 
-- **0:00–0:15** タイトル → 「**Konami の Gradius III は、あなたを主役にした。Gradius Web3 は、あなたの agent を主役にする。**」 → 「**Play to Design Agents**」 → コイン投入 (任意で KeeperHub x402)
+- **0:00–0:15** タイトル → 「**Konami の Gradius III は、あなたを主役にした。Gr@diusWeb3 は、あなたの agent を主役にする。**」 → 「**Play to Design Agents**」 → コイン投入 (任意で KeeperHub x402)
 - **0:15–1:30** **Full Gradius Moai Stage play (75 秒)**
   - モアイステージ背景、雑魚敵にトレードオフラベル
   - 5 種モアイ撃破でカプセル放出、bar 進行
