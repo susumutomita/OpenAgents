@@ -111,7 +111,7 @@ export function createApp(
     }
 
     const storedBirth = await repository.save({
-      ...createAgentBirthDraft(parsed.playerName, parsed.playLog),
+      ...(await createAgentBirthDraft(parsed.playerName, parsed.playLog)),
       createdAt: new Date().toISOString(),
     });
 

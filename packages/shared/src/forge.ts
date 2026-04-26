@@ -133,14 +133,14 @@ function buildFeed(
   return feed;
 }
 
-export function createAgentBirthDraft(
+export async function createAgentBirthDraft(
   playerName: string,
   playLog: PlayLog
-): AgentBirthDraft {
-  const wallet = deriveWalletFromPlayLog(playLog);
+): Promise<AgentBirthDraft> {
+  const wallet = await deriveWalletFromPlayLog(playLog);
   const profile = mapPlayLogToProfile(playLog);
   const policy = mapProfileToPolicy(profile);
-  const birthHash = hashPlayLog(playLog);
+  const birthHash = await hashPlayLog(playLog);
   const ensName = `${slugifyPlayerName(playerName)}-${playLog.sessionId.slice(0, 6)}.openagents.eth`;
   const tokenId = BigInt(`0x${birthHash.slice(2, 18)}`).toString(10);
   const archetype = describeArchetype(profile);

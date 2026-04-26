@@ -14,6 +14,7 @@
 
 ### 制約
 
+- **backend なし** (frontend 完結)、Vercel 静的配信、SubtleCrypto で wallet 派生。
 - **testnet only** (Sepolia 主軸)、実資産運用禁止。
 - **No Mock**: スタブ API / モックデータ不使用 (architecture harness で検出)。
 - **No npx**: `bunx` / `nlx` を使う。

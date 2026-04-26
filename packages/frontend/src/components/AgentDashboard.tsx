@@ -1,13 +1,56 @@
 import type { StoredAgentBirth } from '@openagents/shared/browser';
+import {
+  ARCHETYPE_COLOR,
+  ARCHETYPE_DESC,
+  ARCHETYPE_LABEL,
+  type Archetype,
+  getAllocation,
+} from '../game/runtime';
 import { RadarDisplay } from './RadarDisplay';
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-export function AgentDashboard({ birth }: { birth: StoredAgentBirth }) {
+export function AgentDashboard({
+  birth,
+  archetype,
+}: {
+  birth: StoredAgentBirth;
+  archetype: Archetype;
+}) {
   return (
     <section className="dashboard-grid">
+      <section
+        className="panel archetype-panel"
+        style={{ borderColor: ARCHETYPE_COLOR[archetype] }}
+      >
+        <div className="panel-header">
+          <span className="eyebrow">PORTFOLIO ARCHETYPE</span>
+          <h2 style={{ color: ARCHETYPE_COLOR[archetype] }}>
+            {ARCHETYPE_LABEL[archetype]}
+          </h2>
+          <p>{ARCHETYPE_DESC[archetype]}</p>
+        </div>
+        <div className="alloc-grid">
+          {getAllocation(archetype).map((slice) => (
+            <div key={slice.asset} className="alloc-row">
+              <span className="alloc-asset">{slice.asset.trim()}</span>
+              <div className="alloc-bar">
+                <div
+                  className="alloc-fill"
+                  style={{
+                    width: `${slice.weight}%`,
+                    backgroundColor: slice.color,
+                  }}
+                />
+              </div>
+              <span className="alloc-weight">{slice.weight}%</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <RadarDisplay profile={birth.agent.profile} />
 
       <section className="panel">
