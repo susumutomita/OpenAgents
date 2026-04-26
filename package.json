@@ -1,11 +1,11 @@
 {
-  "name": "typescript-template",
+  "name": "openagents",
   "version": "1.0.0",
   "author": "Susumu Tomita <oyster880@gmail.com>",
   "license": "MIT",
   "workspaces": ["packages/*"],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
+    "dev": "concurrently -n backend,frontend -c blue.bold,magenta.bold \"bun run --filter @openagents/backend dev\" \"bun run --filter @openagents/frontend dev\"",
     "build": "bun run --filter '*' build",
     "test": "bun run --filter '*' test",
     "test:coverage": "bun run --filter '*' test:coverage",
@@ -21,10 +21,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
+    "@types/node": "^24.9.1",
+    "bun-types": "^1.3.11",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.2",
     "rimraf": "^6.1.3",
+    "concurrently": "^9.2.1",
     "textlint": "15.4.1",
+    "typescript": "^5.9.3",
     "@textlint-ja/textlint-rule-preset-ai-writing": "^1.6.1",
     "textlint-rule-ja-no-abusage": "^3.0.0",
     "textlint-rule-ja-no-inappropriate-words": "^2.0.0",

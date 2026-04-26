@@ -25,21 +25,21 @@
 ### タスク (依存順)
 
 #### Wave 1: スキャフォールド (並列)
-- [ ] `/init-project` で `packages/backend` (Hono) と `packages/frontend` (Vite + React) をスキャフォールド。
-- [ ] `contracts/` に Foundry プロジェクトを初期化、ERC-7857 iNFT contract と ENS リゾルバ stub を配置。
-- [ ] `FEEDBACK.md` を repo root に作成 (Uniswap 賞要件)。
-- [ ] `.env.example` で testnet RPC、Uniswap API key、KeeperHub credentials 等のスロットを定義。
+- [x] `packages/backend` (Hono) と `packages/frontend` (Vite + React) をスキャフォールド。
+- [x] `contracts/` に Foundry 向け stub を配置し、ERC-7857 風 iNFT contract と ENS リゾルバ stub を追加。
+- [x] `FEEDBACK.md` を repo root に作成 (Uniswap 賞要件)。
+- [x] `.env.example` で testnet RPC、Uniswap API key、KeeperHub credentials 等のスロットを定義。
 
 #### Wave 2: ドメインロジック (並列)
-- [ ] `mapPlayLogToProfile` 純粋関数を実装、テストで決定性 (同じ入力 → 同じ出力) を保証。
-- [ ] `mapProfileToPolicy` 純粋関数を実装、境界値テスト含む。
-- [ ] `keccak256(playLog) → wallet seed` の派生関数 + テスト。
-- [ ] iNFT ABI 定義、`embedPolicy` 関数を contract で実装。
+- [x] `mapPlayLogToProfile` 純粋関数を実装、テストで決定性 (同じ入力 → 同じ出力) を保証。
+- [x] `mapProfileToPolicy` 純粋関数を実装、境界値テスト含む。
+- [x] `keccak256(playLog) → wallet seed` の派生関数 + テスト。
+- [x] `embedPolicy` 相当の contract stub を実装。
 
 #### Wave 3: API + UI 統合
-- [ ] Hono の `POST /api/birth` を実装 (プレイログ受領 → seed → wallet → iNFT mint → ENS 登録)。
-- [ ] React の `BirthArcade` コンポーネントを Canvas で実装、入力イベントを `PlayLog` に変換。
-- [ ] `ScouterDisplay` で戦闘力 UI、`AgentDashboard` で取引 feed。
+- [x] Hono の `POST /api/birth` を実装 (現在は local birth draft を返し、JSONL に永続化)。
+- [x] React の `BirthArcade` コンポーネントを Canvas で実装、入力イベントを `PlayLog` に変換。
+- [x] `ScouterDisplay` / `RadarDisplay` と `AgentDashboard` を実装。
 - [ ] `BossArena` で自動ボス戦シミュ (Aave 風 LTV 突破 + KeeperHub で先逃げ)。
 
 #### Wave 4: prize 統合 (並列、優先度別)
@@ -67,21 +67,24 @@
 ### 進捗ログ
 
 - **2026-04-26**: 仕様書作成、ブランチ `feat/risk-gradius-agent` 切る。
-- **2026-04-26**: Wave 1 着手予定。
+- **2026-04-26**: Wave 1 完了。workspace / contract stub / `.env.example` / `FEEDBACK.md` を追加。
+- **2026-04-26**: Wave 2 完了。deterministic profile / policy / wallet derivation とテストを追加。
+- **2026-04-26**: Wave 3 の MVP 部分完了。Canvas arcade、`POST /api/birth`、JSONL 永続化、Radar / Dashboard を実装。
+- **2026-04-26**: `make before-commit` を green で通過。
 
 ### 振り返り (実装中・実装後に追記)
 
 #### 問題
 
-(未発生)
+- README が実装前提のまま prize 完成版を記述しており、現状の local MVP と乖離していた。
 
 #### 根本原因
 
-(未発生)
+- 仕様を先に大きく固定した一方で、実装後の README 整合確認を後回しにしていた。
 
 #### 予防策
 
-(未発生)
+- 実装完了時に Quick Start、現在のスコープ、未接続の外部 integration を必ず README に反映する。
 
 ### Known Follow-ups
 
