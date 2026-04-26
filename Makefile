@@ -4,7 +4,7 @@ install:
 
 .PHONY: install_ci
 install_ci:
-	bun install --frozen-lockfile
+	bun install --frozen-lockfile $(EXTRA_INSTALL_FLAGS)
 
 .PHONY: build
 build:
