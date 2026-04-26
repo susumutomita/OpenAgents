@@ -279,6 +279,17 @@ export function createRuntime(chain: ChainId = 'ARB'): Runtime {
   };
 }
 
+function enemyAssetLabel(archetype: Archetype): string {
+  switch (archetype) {
+    case 'conservative':
+      return 'STABLE';
+    case 'balanced':
+      return 'YIELD';
+    case 'aggressive':
+      return 'MEME';
+  }
+}
+
 function elapsedMs(rt: Runtime) {
   return Math.round((rt.t / 60) * 1000);
 }
@@ -826,6 +837,33 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
         ctx.globalAlpha = 1;
       }
       drawSprite(ctx, GRUNT, e.spriteKey, e.x | 0, e.y | 0);
+      // Floating identity label so the player learns what each color *means*.
+      // Visible for the first ~1.5s of life or while the tutorial is on.
+      const labelAge = rt.t - e.spawnAt;
+      const showLabel = labelAge < 90 || e.isTutorial;
+      if (showLabel) {
+        const alpha = e.isTutorial
+          ? 1
+          : Math.max(0, Math.min(1, (90 - labelAge) / 30));
+        ctx.globalAlpha = alpha;
+        const label = enemyAssetLabel(e.archetype);
+        const reward = `+${e.scoreOnKill}`;
+        const lx = (e.x | 0) - Math.floor((label.length * 6) / 2) + 6;
+        const ly = (e.y | 0) - 16;
+        // Background plate so the label stays readable on busy backgrounds.
+        ctx.fillStyle = 'rgba(0, 16, 42, 0.85)';
+        ctx.fillRect(lx - 2, ly - 1, label.length * 6 + 4, 9);
+        pixelText(ctx, label, lx, ly, e.color);
+        const ry = ly + 8;
+        pixelText(
+          ctx,
+          reward,
+          (e.x | 0) + 6 - Math.floor((reward.length * 6) / 2),
+          ry,
+          PAL.hudYellow
+        );
+        ctx.globalAlpha = 1;
+      }
     } else {
       const key = e.chargeT > 0 ? MOAI_CHARGE_KEY : MOAI_KEY;
       drawSprite(ctx, MOAI, key, e.x | 0, e.y | 0, false, e.fromTop);
