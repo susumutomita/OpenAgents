@@ -2024,3 +2024,66 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/*
+ * Mobile overrides for the LP. Uses !important because the layout-driving
+ * grids are set via inline `style` props (which outweigh CSS specificity).
+ * Targets only structural / overlap concerns — palette + typography stay in JS.
+ */
+@media (max-width: 768px) {
+  .lp-status-bar {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px 16px !important;
+    padding: 10px 16px !important;
+  }
+  .lp-nav {
+    grid-template-columns: 1fr auto !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+  }
+  .lp-nav-links {
+    display: none !important;
+  }
+  .lp-hero-stage {
+    transform: none !important;
+    min-height: auto !important;
+    padding: 0 16px !important;
+  }
+  .lp-fighter {
+    transform: none !important;
+  }
+  .lp-fighter svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  .lp-hud-overlay {
+    display: none !important;
+  }
+  .lp-hero-lower {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    padding: 0 16px !important;
+  }
+  .lp-grid-three {
+    grid-template-columns: 1fr !important;
+  }
+  .lp-table-row {
+    grid-template-columns: 70px 1fr !important;
+    gap: 4px 12px !important;
+    padding: 12px 0 !important;
+  }
+  .lp-table-row > *:nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+  .lp-sponsor-split {
+    grid-template-columns: 1fr !important;
+  }
+  .lp-diff-row {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+  .lp-footer {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}

@@ -307,7 +307,7 @@ function StatusBar() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div style={S.statusBar}>
+    <div className="lp-status-bar" style={S.statusBar}>
       <span>
         <span style={{ color: A.green }}>●</span> NETWORK_ONLINE ·
         GR@DIUS_FORGE_v1.0
@@ -326,12 +326,12 @@ function StatusBar() {
 
 function Nav({ onPlay }: { onPlay: () => void }) {
   return (
-    <div style={S.nav}>
+    <div className="lp-nav" style={S.nav}>
       <div style={S.logo}>
         <span style={{ color: A.acid }}>▮▮</span> GR@DIUS
         <span style={{ color: A.mute }}>/WEB3</span>
       </div>
-      <div style={S.navLinks}>
+      <div className="lp-nav-links" style={S.navLinks}>
         <a href="#tradeoffs" style={S.navLink}>
           [01] Tradeoffs
         </a>
@@ -496,19 +496,26 @@ function Hero({
           <div>SHEET 01 / 06</div>
         </div>
 
-        <div style={S.heroStage}>
-          <div style={S.fighterFrame}>
-            <Fighter width={1180} mode="silhouette" />
+        <div className="lp-hero-stage" style={S.heroStage}>
+          <div className="lp-fighter" style={S.fighterFrame}>
+            <Fighter width={1180} />
           </div>
 
-          <div style={{ position: 'absolute', top: '6%', left: '62%' }}>
+          <div
+            className="lp-hud-overlay"
+            style={{ position: 'absolute', top: '6%', left: '62%' }}
+          >
             <Reticle size={140} label="TGT · AGENT-FORGE" color={A.amber} />
           </div>
-          <div style={{ position: 'absolute', top: '60%', left: '14%' }}>
+          <div
+            className="lp-hud-overlay"
+            style={{ position: 'absolute', top: '60%', left: '14%' }}
+          >
             <Reticle size={100} label="WPT · INSERT_COIN" color={A.hud} />
           </div>
 
           <Callout
+            className="lp-hud-overlay"
             x="58%"
             y="24%"
             label="CANOPY"
@@ -516,6 +523,7 @@ function Hero({
             color={A.hud}
           />
           <Callout
+            className="lp-hud-overlay"
             x="12%"
             y="26%"
             label="F100-PW"
@@ -523,6 +531,7 @@ function Hero({
             color={A.hud}
           />
           <Callout
+            className="lp-hud-overlay"
             x="22%"
             y="74%"
             label="AIM-9X"
@@ -531,6 +540,7 @@ function Hero({
             flip
           />
           <Callout
+            className="lp-hud-overlay"
             x="66%"
             y="74%"
             label="LINK-16"
@@ -542,7 +552,7 @@ function Hero({
           <div style={S.heroBanner}>── INSERT COIN · 60 SECONDS ──</div>
         </div>
 
-        <div style={S.heroLower}>
+        <div className="lp-hero-lower" style={S.heroLower}>
           <div>
             <h1 style={S.heroH1}>
               KILL THE
@@ -755,7 +765,7 @@ function ArchetypesSection() {
         title="Six enemies. One agent."
         right="EACH_SHOT_IS_A_VOTE"
       />
-      <div style={S.gridThree}>
+      <div className="lp-grid-three" style={S.gridThree}>
         {ARCHETYPES.map((t, i) => (
           <div
             key={t.id}
@@ -839,7 +849,7 @@ function ForgeProtocolSection() {
         title="Seven steps from joystick to iNFT."
       />
       <div style={{ padding: '0 28px' }}>
-        <div style={{ ...S.tableHead }}>
+        <div className="lp-table-row" style={{ ...S.tableHead }}>
           <div>STEP</div>
           <div>PHASE</div>
           <div>EVENT</div>
@@ -849,6 +859,7 @@ function ForgeProtocolSection() {
         {FORGE_FLOW.map(([d, t, ev, n, s], i) => (
           <div
             key={d}
+            className="lp-table-row"
             style={{
               ...S.tableRow,
               borderBottom:
@@ -882,7 +893,10 @@ function ForgeProtocolSection() {
 function SponsorPayloadSection() {
   return (
     <section id="sponsors" style={S.section}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr' }}>
+      <div
+        className="lp-sponsor-split"
+        style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr' }}
+      >
         <div
           style={{ padding: '60px 28px', borderRight: `1px solid ${A.rule}` }}
         >
@@ -989,7 +1003,7 @@ function DifferentiationSection() {
         title="Why play, not configure."
       />
       <div style={{ padding: '0 28px 40px' }}>
-        <div style={S.diffHead}>
+        <div className="lp-diff-row" style={S.diffHead}>
           <span />
           <span>TRADITIONAL</span>
           <span style={{ color: A.acid }}>GR@DIUS_WEB3</span>
@@ -997,6 +1011,7 @@ function DifferentiationSection() {
         {DIFF_ROWS.map(([metric, bad, good], i) => (
           <div
             key={metric}
+            className="lp-diff-row"
             style={{
               ...S.diffRow,
               borderBottom:
@@ -1160,7 +1175,7 @@ function CTASection({ onPlay }: { onPlay: () => void }) {
 
 function FooterBar() {
   return (
-    <div style={S.footer}>
+    <div className="lp-footer" style={S.footer}>
       <span>© 2026 GR@DIUS_WEB3 · MIT LICENSE · ETHGLOBAL</span>
       {FOOTER_LINKS.map(([label, href]) => (
         <a

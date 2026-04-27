@@ -88,6 +88,7 @@ function CalloutImpl({
   sub,
   color = HUD_CYAN,
   flip = false,
+  className,
 }: {
   x: string;
   y: string;
@@ -95,9 +96,11 @@ function CalloutImpl({
   sub: string;
   color?: string;
   flip?: boolean;
+  className?: string;
 }) {
   return (
     <div
+      className={className}
       style={{
         position: 'absolute',
         left: x,
