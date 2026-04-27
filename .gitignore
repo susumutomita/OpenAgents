@@ -140,3 +140,9 @@ docs/specs/image\ copy.png
 
 # zombie backend runtime artifacts
 packages/backend/
+
+# Foundry dependencies (installed via `forge install --no-git`)
+contracts/lib/
+contracts/cache/
+contracts/out/
+contracts/broadcast/

@@ -12,7 +12,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useWalletClient } from 'wagmi';
 import { AgentDashboard } from './components/AgentDashboard';
 import { BirthArcade } from './components/BirthArcade';
 import { ConnectButton } from './components/ConnectButton';
@@ -20,6 +20,9 @@ import { Fighter } from './components/Fighter';
 import { Callout, HUDCorners, Reticle } from './components/HUD';
 import { MusicPlayer } from './components/MusicPlayer';
 import type { Archetype } from './game/runtime';
+import { runOnChainForge } from './web3/forge-onchain';
+import { type OnChainProof, idleProof } from './web3/types';
+import { executeFirstSwap } from './web3/uniswap-swap';
 
 const A = {
   bg: '#05080c',
@@ -164,7 +167,7 @@ const SPONSOR_PAYLOAD = [
     weight: 20,
     role: 'On-chain agent identity (Creative track)',
     body: 'Auto-issued subname `{handle}.gradiusweb3.eth` with verifiable text records. The credential is portable, the iNFT carries it.',
-    where: 'contracts/src/AgentForgeSubnameRegistry.sol',
+    where: 'packages/frontend/src/web3/ens-register.ts',
     color: A.hud,
   },
   {
@@ -214,8 +217,11 @@ export function App() {
   const [archetype, setArchetype] = useState<Archetype | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [proof, setProof] = useState<OnChainProof>(idleProof);
+  const [swapping, setSwapping] = useState(false);
   const arcadeRef = useRef<HTMLDivElement | null>(null);
   const { address: ownerAddress } = useAccount();
+  const { data: walletClient } = useWalletClient();
 
   async function handleComplete(playLog: PlayLog, derivedArchetype: Archetype) {
     try {
@@ -232,12 +238,56 @@ export function App() {
       };
       setArchetype(derivedArchetype);
       setBirth(stored);
+
+      // Fire-and-await on-chain pipeline. allSettled inside means this
+      // resolves with success/failed per step rather than throwing.
+      if (walletClient) {
+        const result = await runOnChainForge(walletClient, stored);
+        setProof(result);
+      } else {
+        setProof({
+          ...idleProof,
+          mint: { status: 'failed', error: 'wallet not connected' },
+          storage: { status: 'failed', error: 'wallet not connected' },
+          ens: { status: 'failed', error: 'wallet not connected' },
+        });
+      }
     } catch (caughtError) {
       setError(
         caughtError instanceof Error ? caughtError.message : 'Forge failed.'
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleFirstSwap() {
+    if (!walletClient) {
+      setProof((prev) => ({
+        ...prev,
+        swap: { status: 'failed', error: 'wallet not connected' },
+      }));
+      return;
+    }
+    try {
+      setSwapping(true);
+      setProof((prev) => ({ ...prev, swap: { status: 'pending' } }));
+      const result = await executeFirstSwap(walletClient);
+      setProof((prev) => ({
+        ...prev,
+        swap: { status: 'success', data: result },
+      }));
+    } catch (caughtError) {
+      setProof((prev) => ({
+        ...prev,
+        swap: {
+          status: 'failed',
+          error:
+            caughtError instanceof Error ? caughtError.message : 'swap failed',
+        },
+      }));
+    } finally {
+      setSwapping(false);
     }
   }
 
@@ -275,7 +325,13 @@ export function App() {
         submitting={submitting}
       />
       {birth && archetype ? (
-        <DashboardSection birth={birth} archetype={archetype} />
+        <DashboardSection
+          birth={birth}
+          archetype={archetype}
+          proof={proof}
+          onFirstSwap={handleFirstSwap}
+          swapping={swapping}
+        />
       ) : null}
       <CTASection onPlay={jumpToArcade} />
       <FooterBar />
@@ -1119,7 +1175,16 @@ const ArcadeSection = forwardRef<HTMLDivElement, ArcadeSectionProps>(
 function DashboardSection({
   birth,
   archetype,
-}: { birth: StoredAgentBirth; archetype: Archetype }) {
+  proof,
+  onFirstSwap,
+  swapping,
+}: {
+  birth: StoredAgentBirth;
+  archetype: Archetype;
+  proof: OnChainProof;
+  onFirstSwap: () => void;
+  swapping: boolean;
+}) {
   return (
     <section id="dashboard" style={S.section}>
       <SectionHead
@@ -1128,7 +1193,13 @@ function DashboardSection({
         right="OUTPUT"
       />
       <div style={{ padding: '24px 28px 40px' }}>
-        <AgentDashboard birth={birth} archetype={archetype} />
+        <AgentDashboard
+          birth={birth}
+          archetype={archetype}
+          proof={proof}
+          onFirstSwap={onFirstSwap}
+          swapping={swapping}
+        />
       </div>
     </section>
   );

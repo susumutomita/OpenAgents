@@ -9,14 +9,49 @@ import {
   type Archetype,
   getAllocation,
 } from '../game/runtime';
+import type { OnChainProof, OnChainStep, TxStatus } from '../web3/types';
 import { RadarDisplay } from './RadarDisplay';
+
+// Palette duplicated from App.tsx so this component stays self-contained.
+const A = {
+  bg: '#05080c',
+  panel: '#0a1118',
+  ink: '#e6f1ff',
+  mute: '#5a6c80',
+  rule: '#1a2735',
+  acid: '#c8ff00',
+  hud: '#7ee0ff',
+  amber: '#ffb84d',
+  hot: '#ff4438',
+  green: '#3dffa3',
+} as const;
+
+const STATUS_COLOR: Record<TxStatus, string> = {
+  idle: A.mute,
+  pending: A.amber,
+  success: A.green,
+  failed: A.hot,
+};
+
+const STATUS_LABEL: Record<TxStatus, string> = {
+  idle: '○ IDLE',
+  pending: '◇ PENDING',
+  success: '● OK',
+  failed: '× FAIL',
+};
 
 export function AgentDashboard({
   birth,
   archetype,
+  proof,
+  onFirstSwap,
+  swapping,
 }: {
   birth: StoredAgentBirth;
   archetype: Archetype;
+  proof?: OnChainProof;
+  onFirstSwap?: () => void;
+  swapping?: boolean;
 }) {
   return (
     <section className="dashboard-grid">
@@ -116,6 +151,14 @@ export function AgentDashboard({
         </div>
       </section>
 
+      {proof ? (
+        <OnChainProofPanel
+          proof={proof}
+          onFirstSwap={onFirstSwap}
+          swapping={swapping}
+        />
+      ) : null}
+
       <section className="panel feed-panel">
         <div className="panel-header">
           <span className="eyebrow">Agent Feed</span>
@@ -132,4 +175,159 @@ export function AgentDashboard({
       </section>
     </section>
   );
+}
+
+function OnChainProofPanel({
+  proof,
+  onFirstSwap,
+  swapping,
+}: {
+  proof: OnChainProof;
+  onFirstSwap?: () => void;
+  swapping?: boolean;
+}) {
+  return (
+    <section
+      className="panel"
+      style={{ borderColor: A.rule, background: A.panel }}
+    >
+      <div className="panel-header">
+        <span className="eyebrow" style={{ color: A.amber }}>
+          ON-CHAIN PROOF
+        </span>
+        <h2 style={{ color: A.ink }}>Realized on testnet</h2>
+        <p style={{ color: A.mute, fontSize: 12 }}>
+          0G Galileo iNFT · 0G Storage CID · Sepolia ENS · Sepolia Uniswap.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
+        <ProofRow
+          label="0G iNFT"
+          step={proof.mint}
+          href={proof.mint.data?.explorerUrl}
+          subtitle={
+            proof.mint.data
+              ? `tokenId ${shortHex(proof.mint.data.tokenId)} · tx ${shortHex(proof.mint.data.txHash)}`
+              : 'mint pending'
+          }
+        />
+        <ProofRow
+          label="0G STORAGE"
+          step={proof.storage}
+          subtitle={proof.storage.data?.cid ?? 'cid pending'}
+        />
+        <ProofRow
+          label="ENS"
+          step={proof.ens}
+          href={proof.ens.data?.resolverUrl}
+          subtitle={proof.ens.data?.name ?? 'subname pending'}
+        />
+        <ProofRow
+          label="UNISWAP TX"
+          step={proof.swap}
+          href={proof.swap.data?.explorerUrl}
+          subtitle={
+            proof.swap.data
+              ? `tx ${shortHex(proof.swap.data.txHash)}`
+              : 'swap not executed'
+          }
+          action={
+            proof.swap.status === 'success' ? null : (
+              <button
+                type="button"
+                onClick={onFirstSwap}
+                disabled={swapping || proof.swap.status === 'pending'}
+                style={swapButtonStyle(swapping ?? false)}
+              >
+                {swapping ? 'SWAPPING…' : 'INSERT COIN FOR FIRST TRADE'}
+              </button>
+            )
+          }
+        />
+      </div>
+    </section>
+  );
+}
+
+function ProofRow({
+  label,
+  step,
+  subtitle,
+  href,
+  action,
+}: {
+  label: string;
+  step: OnChainStep<unknown>;
+  subtitle?: string;
+  href?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'auto 1fr auto',
+        gap: 16,
+        alignItems: 'center',
+        padding: '10px 12px',
+        border: `1px solid ${A.rule}`,
+        background: A.bg,
+        fontSize: 12,
+        fontFamily:
+          '"JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace',
+      }}
+    >
+      <div
+        style={{
+          color: STATUS_COLOR[step.status],
+          fontWeight: 700,
+          letterSpacing: '0.18em',
+          minWidth: 90,
+        }}
+      >
+        {STATUS_LABEL[step.status]}
+      </div>
+      <div style={{ display: 'grid', gap: 2 }}>
+        <div style={{ color: A.ink, fontWeight: 600, letterSpacing: '0.12em' }}>
+          {label}
+        </div>
+        {step.status === 'failed' ? (
+          <div style={{ color: A.hot, fontSize: 11 }}>{step.error}</div>
+        ) : href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: A.hud, textDecoration: 'underline' }}
+          >
+            {subtitle}
+          </a>
+        ) : (
+          <div style={{ color: A.mute, fontSize: 11 }}>{subtitle}</div>
+        )}
+      </div>
+      <div>{action}</div>
+    </div>
+  );
+}
+
+function swapButtonStyle(disabled: boolean): React.CSSProperties {
+  return {
+    background: disabled ? A.rule : A.acid,
+    color: disabled ? A.mute : A.bg,
+    border: 0,
+    padding: '10px 14px',
+    fontFamily: 'inherit',
+    fontWeight: 700,
+    fontSize: 11,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+  };
+}
+
+function shortHex(hex: string): string {
+  if (hex.length <= 14) return hex;
+  return `${hex.slice(0, 8)}…${hex.slice(-6)}`;
 }

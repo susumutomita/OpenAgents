@@ -45,9 +45,11 @@ export interface AgentPolicy {
   stopLossPct: number;
 }
 
+/// Display-only wallet metadata derived deterministically from the play log.
+/// `seed` is exposed for reproducibility narrative; `address` is shown only
+/// when no real wallet is connected. No private key is derived or stored.
 export interface DerivedWallet {
   seed: string;
-  privateKey: string;
   address: string;
 }
 
@@ -88,4 +90,41 @@ export interface AgentBirthDraft {
 
 export interface StoredAgentBirth extends AgentBirthDraft {
   createdAt: string;
+}
+
+/// On-chain pipeline status (re-exported for the frontend OnChainProof
+/// surface — kept here so non-frontend consumers can import the same shape).
+export type TxStatus = 'idle' | 'pending' | 'success' | 'failed';
+
+export interface OnChainStep<T> {
+  status: TxStatus;
+  data?: T;
+  error?: string;
+}
+
+export interface OnChainMintProof {
+  txHash: string;
+  tokenId: string;
+  explorerUrl: string;
+}
+
+export interface OnChainStorageProof {
+  cid: string;
+}
+
+export interface OnChainEnsProof {
+  name: string;
+  resolverUrl: string;
+}
+
+export interface OnChainSwapProof {
+  txHash: string;
+  explorerUrl: string;
+}
+
+export interface OnChainProof {
+  mint: OnChainStep<OnChainMintProof>;
+  storage: OnChainStep<OnChainStorageProof>;
+  ens: OnChainStep<OnChainEnsProof>;
+  swap: OnChainStep<OnChainSwapProof>;
 }
