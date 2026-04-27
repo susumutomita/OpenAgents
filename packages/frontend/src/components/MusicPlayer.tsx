@@ -23,6 +23,8 @@ const VIS_BARS = [
   'vb-h',
 ] as const;
 
+export const GAME_END_EVENT = 'gradius:gameEnd';
+
 function createChiptuneEngine(): ChiptuneEngine {
   let ctx: AudioContext | null = null;
   let masterGain: GainNode | null = null;
@@ -1574,6 +1576,17 @@ function MusicPlayerImpl() {
     const id = setInterval(() => setPulse((p) => (p + 1) % 8), 100);
     return () => clearInterval(id);
   }, [playing]);
+
+  useEffect(() => {
+    const onGameEnd = () => {
+      if (engineRef.current?.isRunning()) {
+        engineRef.current.stop();
+        setPlaying(false);
+      }
+    };
+    window.addEventListener(GAME_END_EVENT, onGameEnd);
+    return () => window.removeEventListener(GAME_END_EVENT, onGameEnd);
+  }, []);
 
   const toggle = () => {
     if (!engineRef.current) return;

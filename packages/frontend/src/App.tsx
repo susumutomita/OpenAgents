@@ -18,7 +18,7 @@ import { BirthArcade } from './components/BirthArcade';
 import { ConnectButton } from './components/ConnectButton';
 import { Fighter } from './components/Fighter';
 import { Callout, HUDCorners, Reticle } from './components/HUD';
-import { MusicPlayer } from './components/MusicPlayer';
+import { GAME_END_EVENT, MusicPlayer } from './components/MusicPlayer';
 import type { Archetype } from './game/runtime';
 
 const A = {
@@ -218,6 +218,7 @@ export function App() {
   const { address: ownerAddress } = useAccount();
 
   async function handleComplete(playLog: PlayLog, derivedArchetype: Archetype) {
+    window.dispatchEvent(new Event(GAME_END_EVENT));
     try {
       setSubmitting(true);
       setError('');
