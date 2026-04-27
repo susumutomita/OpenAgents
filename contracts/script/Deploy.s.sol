@@ -3,9 +3,11 @@ pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
 import {AgentForgeINFT} from "../src/AgentForgeINFT.sol";
-import {AgentForgeSubnameRegistry} from "../src/AgentForgeSubnameRegistry.sol";
 
-/// @notice Deploy AgentForgeINFT and AgentForgeSubnameRegistry to the active chain.
+/// @notice Deploy AgentForgeINFT to the active chain.
+///
+/// Subname registration is delegated to real ENS (Sepolia NameWrapper) from
+/// the frontend, so this script only deploys the iNFT contract.
 ///
 /// IMPORTANT: This script never reads a private key from the environment. The
 /// signer is supplied by Foundry's CLI via one of:
@@ -17,22 +19,20 @@ import {AgentForgeSubnameRegistry} from "../src/AgentForgeSubnameRegistry.sol";
 /// One-time setup for keystore-backed signing:
 ///   cast wallet import deployer --interactive
 ///   make deploy NETWORK=sepolia ACCOUNT=deployer SENDER=0x...
+///
+/// Galileo (0G testnet) deploy example:
+///   make deploy NETWORK=galileo ACCOUNT=deployer SENDER=0x...
+/// or directly:
+///   forge script script/Deploy.s.sol:Deploy \
+///     --rpc-url $GALILEO_RPC_URL --broadcast --account deployer --sender 0x...
 contract Deploy is Script {
-    function run() external {
+    function run() external returns (address inftAddress) {
         vm.startBroadcast();
 
         AgentForgeINFT inft = new AgentForgeINFT();
-        AgentForgeSubnameRegistry registry = new AgentForgeSubnameRegistry();
 
         vm.stopBroadcast();
 
-        // Surface deployed addresses for downstream tooling to scrape.
-        // forge logs them automatically when the script returns.
-        // solhint-disable-next-line no-console
-        // (intentionally not using console.log to keep deps minimal)
-        bytes memory _addr1 = abi.encodePacked(address(inft));
-        bytes memory _addr2 = abi.encodePacked(address(registry));
-        _addr1; // silence unused
-        _addr2;
+        inftAddress = address(inft);
     }
 }

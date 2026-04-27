@@ -143,8 +143,10 @@ make deploy NETWORK=sepolia INTERACTIVE=1
 make deploy_all
 ```
 
-`Deploy.s.sol` deploys `AgentForgeINFT.sol` + `AgentForgeSubnameRegistry.sol`
-per chain in a single broadcast. RPCs are wired via `contracts/foundry.toml`.
+`Deploy.s.sol` deploys `AgentForgeINFT.sol` (ERC-721 + tokenURI iNFT) per
+chain in a single broadcast. RPCs are wired via `contracts/foundry.toml`. The
+prior in-house `AgentForgeSubnameRegistry.sol` was removed in favour of real
+Sepolia ENS (NameWrapper + Resolver via viem).
 
 ### Frontend wallet (in-app)
 
@@ -178,8 +180,8 @@ This project is purpose-built around the ETHGlobal sponsor stack — every primi
 
 | Sponsor | Role | Where in the code |
 |---------|------|-------------------|
-| **0G** | iNFT (ERC-7857) for the agent body, Storage for the play log + memory, Compute for sealed inference of the design pipeline | `contracts/src/AgentForgeINFT.sol`, `packages/shared/src/forge.ts` |
-| **ENS** | Auto-issued subname `{handle}.gradiusweb3.eth` with verifiable text records (`combat-power`, `archetype`, `design-hash`) | `contracts/src/AgentForgeSubnameRegistry.sol`, `packages/shared/src/forge.ts` |
+| **0G** | iNFT (ERC-721 with deterministic `tokenId = keccak(msg.sender, playLogHash)` and data-URI tokenURI) deployed to 0G Galileo testnet. Play log JSON CID stored in `storageCID` metadata field — full 0G Storage SDK integration is a follow-up. | `contracts/src/AgentForgeINFT.sol`, `packages/frontend/src/web3/zerog-mint.ts`, `packages/frontend/src/web3/zerog-storage.ts` |
+| **ENS** | Auto-issued subname `{handle}.gradiusweb3.eth` on **real Sepolia ENS** (NameWrapper + Resolver) with verifiable text records (`combat-power`, `archetype`, `design-hash`). | `packages/frontend/src/web3/ens-register.ts` |
 | **Gensyn AXL** | Multi-agent / swarm execution. OPTION-style commits in the design pipeline spawn additional encrypted peer nodes | `packages/frontend/src/game/runtime.ts` (votes), runtime topology in `AgentDashboard` |
 | **Uniswap** | The agent's actual on-chain action: real swaps via Uniswap API, `FEEDBACK.md` documents DX learnings | [`FEEDBACK.md`](./FEEDBACK.md) |
 | **KeeperHub** | Reliable execution layer for agent transactions: x402 coin-insert, private-mempool routing, MEV protection, retries | Wired into the agent runtime narrative |
@@ -214,7 +216,7 @@ Each sponsor's prize requirements live in [`docs/prizes/`](./docs/prizes/) (Engl
 │   ├── shared/                # Pure functional core (profile, policy, wallet, forge)
 │   └── backend/               # Optional Hono server (frozen — not in the deploy path)
 ├── contracts/
-│   ├── src/                   # AgentForgeINFT.sol, AgentForgeSubnameRegistry.sol
+│   ├── src/                   # AgentForgeINFT.sol (ERC-721 + tokenURI)
 │   ├── script/Deploy.s.sol    # Multi-chain deploy script
 │   └── foundry.toml           # rpc_endpoints + etherscan
 ├── docs/

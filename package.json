@@ -11,12 +11,12 @@
     "test:coverage": "bun run --filter @gradiusweb3/shared --filter @gradiusweb3/frontend test:coverage",
     "typecheck": "bun run --filter @gradiusweb3/shared --filter @gradiusweb3/frontend typecheck",
     "clean": "bun rimraf node_modules 'packages/*/node_modules' 'packages/*/dist' 'packages/*/coverage'",
-    "lint": "bun biome check .",
-    "lint:fix": "bun biome check --write .",
+    "lint": "bun biome check packages scripts",
+    "lint:fix": "bun biome check --write packages scripts",
     "lint:text": "bun textlint ./README.md",
     "lint-staged": "lint-staged",
-    "format": "bun biome format --write .",
-    "format:check": "bun biome format .",
+    "format": "bun biome format --write packages scripts",
+    "format:check": "bun biome format packages scripts",
     "prepare": "husky"
   },
   "devDependencies": {

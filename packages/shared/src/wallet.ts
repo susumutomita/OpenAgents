@@ -15,12 +15,13 @@ export async function deriveWalletFromPlayLog(
   playLog: PlayLog
 ): Promise<DerivedWallet> {
   const seed = await hashPlayLog(playLog);
-  const privateKey = `0x${await sha256Hex(`${seed}:${playLog.durationMs}:${playLog.finalScore}`)}`;
-  const address = `0x${(await sha256Hex(`${privateKey}:address`)).slice(0, 40)}`;
+  // Display-only address. We hash the seed twice with disjoint domain tags so
+  // the derivation can never accidentally produce a usable secp256k1 key, and
+  // we never expose a private key field to consumers.
+  const address = `0x${(await sha256Hex(`${seed}:display-address:v1`)).slice(0, 40)}`;
 
   return {
     seed,
-    privateKey,
     address,
   };
 }

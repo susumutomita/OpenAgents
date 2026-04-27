@@ -93,3 +93,58 @@
 - Agent breeding (iNFT 合体) は v2。
 - Agent marketplace UI のフル実装は v2。
 - 複数チェーン (Base、Optimism Sepolia) 対応は v2。
+
+---
+
+### Web3 Wiring (実体化) - 2026-04-27
+
+#### 目的
+
+ゲーム終了 → エージェント生成パイプラインの "Web3" 部分を string 連結から実 SDK / 実コントラクト呼び出しに置き換え、0G iNFT / Sepolia ENS / Sepolia Uniswap の 3 賞金トラックを cosmetic から meaningful に引き上げる。
+
+#### 制約
+
+- A 案 (0G + ENS + Uniswap) で確定。Gensyn AXL / KeeperHub は除外。
+- 1 PR で一気貫通 (ヒアリング確定)。
+- 0G Storage SDK は real 統合せず stub (follow-up に持ち越し)。
+- 0G Galileo deploy / ENS parent 取得 / Sepolia faucet は手動オペ。
+
+#### タスク (5 役割 parallel + integration)
+
+- [x] 仕様書 `docs/specs/2026-04-27-web3-wiring.md`
+- [x] PM レビュー `-pm-review.md` (3 ペルソナ user story / dependency graph / scope guard)
+- [x] Designer 設計 `-design.md` (ASCII wireframe / 4 row state matrix / mobile)
+- [x] Developer 実装: contracts (ERC-721 化, deploy script, foundry.toml) + frontend web3/ 7 module + AgentDashboard wiring
+- [x] QA レビュー `-qa.md` (3 critical: tokenId griefing / privateKey 露出 / chain spoofing) → Issue #14, #15 にコメント投稿済み
+- [x] User feedback `-user-feedback.md` (5 UX 問題: README 整合 / wallet 未接続導線 / tooltip / 並列署名 / 審査員向けセクション)
+- [x] Integration: critical security 2 件適用 (tokenId に msg.sender バインド、privateKey 露出削除)、README 同期 (0G Compute / Subname Registry の旧記述削除)
+- [ ] (follow-up) 0G Galileo に実コントラクトデプロイ + `.env` に `VITE_INFT_ADDRESS` 設定
+- [ ] (follow-up) Sepolia ENS で `gradiusweb3.eth` 取得
+- [ ] (follow-up) 0G Storage SDK 実統合 (現在は SHA-256 stub)
+- [ ] (follow-up) wallet 未接続時の OnChainProof 表示分岐 (現在は failed 状態で止まる)
+- [ ] (follow-up) StatusBar に動的 chain 表示 (現在は "CHAIN: SEPOLIA" hard-coded)
+- [ ] (follow-up) Demo video 撮影 (3 分以内、0G prize 必須)
+
+#### 検証手順
+
+1. `cd contracts && forge test` → 7 pass
+2. `make before-commit` → architecture-harness 0 / lint 0 / typecheck 0 / 22 tests / build OK
+3. `bun run dev` で UI 起動、game over 後 OnChainProof セクションが表示されることを確認 (実 mint は VITE_INFT_ADDRESS 未設定のため failed 表示)
+
+#### 進捗ログ
+
+- 2026-04-27 21:30 — ヒアリング確定 (Sepolia ENS / 0G Galileo / 1 PR)
+- 2026-04-27 21:55 — 仕様書 + 5 Issue 作成
+- 2026-04-27 22:30 — 5 役割 agent 並列実行完了 (PM / Designer / Developer / QA / User)
+- 2026-04-27 22:50 — security 修正 2 件 (tokenId に msg.sender バインド、privateKey 削除) + README 同期
+- 2026-04-27 22:55 — 全ゲート green、PR 準備
+
+#### 振り返り
+
+- **問題**: Developer agent は `tokenId = keccak(playLogHash)` を実装したが、これは griefing 攻撃 (第三者が同じハッシュで先に mint してトークンを焼ける) を許す。QA agent が即指摘。
+- **根本原因**: 仕様書で deterministic tokenId の derivation 詳細を msg.sender bind まで明記していなかった。「冪等性」だけ強調していたため、Developer は最小実装で `keccak(playLogHash)` にしてしまった。
+- **予防策**: Phase 2 仕様書テンプレに「Security 考慮」セクションを追加 (replay / griefing / front-running / chain spoofing の 4 軸)。次の Web3 機能仕様で必ず埋める。
+- **問題**: `wallet.ts` がレガシーの deterministic privateKey をまだ吐いていた。WalletConnect 移行後は使わないのに型に残り続け、`StoredAgentBirth` で永続化される潜在 leak。
+- **根本原因**: 旧コード (#5 まで) のときに作った deterministic wallet を、wagmi 移行 (#8) で置き換えたが型・関数を消し損ねた。
+- **予防策**: 大規模リファクタの後に dead-code sweep (gh PR `simplify` 相当) を必ず通す。
+- **学び**: 5 役割 parallel agent は機能した。特に QA / User の独立視点が critical 修正と README 整合エラーを拾えた。1 Developer agent では security と UX の両方を見切れない。次回も同じ構成で。

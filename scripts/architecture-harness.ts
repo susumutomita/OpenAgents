@@ -215,6 +215,10 @@ const SKIP_DIRS = new Set([
   'out',
   '.turbo',
   '.cache',
+  // Foundry-vendored deps (installed via `forge install --no-git`).
+  // Treated like node_modules: third-party code, not under our invariants.
+  'lib',
+  'broadcast',
 ]);
 
 async function walkRepo(root: string): Promise<string[]> {
