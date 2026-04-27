@@ -12,7 +12,7 @@ A 60-second retro arcade shooter that doubles as the world's fastest onboarding 
 [![Contracts: Foundry](https://img.shields.io/badge/contracts-foundry-2eb6ad)](https://getfoundry.sh)
 [![Vercel-ready](https://img.shields.io/badge/deploy-vercel-000000?logo=vercel)](https://vercel.com)
 
-[**▶ Play live demo**](https://gradiusweb3.vercel.app) ·
+[**▶ Play live demo**](https://gr-dius-web3-frontend.vercel.app/) ·
 [**Pitch deck**](./docs/specs/image%20copy.png) ·
 [**Spec**](./docs/specs/2026-04-26-agent-forge.md) ·
 [**Sponsor prizes**](./docs/prizes/)
@@ -96,8 +96,8 @@ The frontend is **fully self-contained**: no backend, no API server, no database
 Requires [Bun](https://bun.sh) ≥ 1.3 and [Foundry](https://getfoundry.sh) (only for contracts).
 
 ```bash
-git clone https://github.com/susumutomita/OpenAgents
-cd OpenAgents
+git clone https://github.com/susumutomita/Gr-diusWeb3
+cd Gr-diusWeb3
 bun install
 make dev                 # opens http://localhost:5173
 ```
@@ -179,7 +179,7 @@ This project is purpose-built around the ETHGlobal sponsor stack — every primi
 | Sponsor | Role | Where in the code |
 |---------|------|-------------------|
 | **0G** | iNFT (ERC-7857) for the agent body, Storage for the play log + memory, Compute for sealed inference of the design pipeline | `contracts/src/AgentForgeINFT.sol`, `packages/shared/src/forge.ts` |
-| **ENS** | Auto-issued subname `{handle}.openagents.eth` with verifiable text records (`combat-power`, `archetype`, `design-hash`) | `contracts/src/AgentForgeSubnameRegistry.sol`, `packages/shared/src/forge.ts` |
+| **ENS** | Auto-issued subname `{handle}.gradiusweb3.eth` with verifiable text records (`combat-power`, `archetype`, `design-hash`) | `contracts/src/AgentForgeSubnameRegistry.sol`, `packages/shared/src/forge.ts` |
 | **Gensyn AXL** | Multi-agent / swarm execution. OPTION-style commits in the design pipeline spawn additional encrypted peer nodes | `packages/frontend/src/game/runtime.ts` (votes), runtime topology in `AgentDashboard` |
 | **Uniswap** | The agent's actual on-chain action: real swaps via Uniswap API, `FEEDBACK.md` documents DX learnings | [`FEEDBACK.md`](./FEEDBACK.md) |
 | **KeeperHub** | Reliable execution layer for agent transactions: x402 coin-insert, private-mempool routing, MEV protection, retries | Wired into the agent runtime narrative |

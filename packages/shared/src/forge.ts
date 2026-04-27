@@ -141,7 +141,7 @@ export async function createAgentBirthDraft(
   const profile = mapPlayLogToProfile(playLog);
   const policy = mapProfileToPolicy(profile);
   const birthHash = await hashPlayLog(playLog);
-  const ensName = `${slugifyPlayerName(playerName)}-${playLog.sessionId.slice(0, 6)}.openagents.eth`;
+  const ensName = `${slugifyPlayerName(playerName)}-${playLog.sessionId.slice(0, 6)}.gradiusweb3.eth`;
   const tokenId = BigInt(`0x${birthHash.slice(2, 18)}`).toString(10);
   const archetype = describeArchetype(profile);
   const highlights = buildHighlights(profile, policy);

@@ -1,4 +1,7 @@
-import type { StoredAgentBirth } from '@openagents/shared/browser';
+import {
+  type StoredAgentBirth,
+  shortAddress,
+} from '@gradiusweb3/shared/browser';
 import {
   ARCHETYPE_COLOR,
   ARCHETYPE_DESC,
@@ -7,10 +10,6 @@ import {
   getAllocation,
 } from '../game/runtime';
 import { RadarDisplay } from './RadarDisplay';
-
-function shortAddress(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
 
 export function AgentDashboard({
   birth,

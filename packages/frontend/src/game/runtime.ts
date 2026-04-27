@@ -3,7 +3,7 @@ import type {
   MoaiId,
   PlayEvent,
   PlayLog,
-} from '@openagents/shared/browser';
+} from '@gradiusweb3/shared/browser';
 import { CHAINS, type ChainId } from './chains';
 import { drawBigText, pixelText } from './font';
 import { PAL, PLAY_H, RH, RW } from './palette';

@@ -21,7 +21,7 @@
 
 ## ハッカソン賞金トラック（必須意識）
 
-OpenAgents はハッカソン参戦プロジェクト。賞金トラックの正本は [`docs/prizes/`](./docs/prizes/) と [`prizes` スキル](./.claude/skills/prizes/SKILL.md)。
+Gr@diusWeb3 はハッカソン参戦プロジェクト。賞金トラックの正本は [`docs/prizes/`](./docs/prizes/) と [`prizes` スキル](./.claude/skills/prizes/SKILL.md)。
 
 - 機能アイデアを出す時点で `prizes` スキルを load し、ルーブリックで採点する。
 - 仕様書には必ず **Prize Targets** セクションを置き、どの賞を何点狙うか・cosmetic 統合になっていないかを明記する。

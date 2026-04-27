@@ -93,7 +93,7 @@ play_log
 - **skill 構成** (どのツールを持つか)
 - **行動ポリシー** (リスク・実行戦略)
 - **wallet** (シード = play_log hash、testnet only)
-- **ENS subname** 自動付与 (`{name}.openagents.eth`)
+- **ENS subname** 自動付与 (`{name}.gradiusweb3.eth`)
 - **iNFT (ERC-7857)** として mint
 
 ### ④ 可視化 (戦闘力 + radar)
@@ -168,7 +168,7 @@ play_log
 - **contracts**: ERC-7857 iNFT、ENS リゾルバ。Solidity (Foundry)。
 - **AXL**: 2 ノード以上を別プロセスで起動 (誕生サーバー + Agent ランタイム)。
 - **0G**: Storage (Log/KV) でプレイログ + 設計ログ + 取引履歴永続化、Compute で profile→policy 派生 (sealed)。
-- **ENS**: `{name}.openagents.eth` subname 自動付与、戦績 text record。
+- **ENS**: `{name}.gradiusweb3.eth` subname 自動付与、戦績 text record。
 - **testnet**: Sepolia 主軸。
 
 ### データモデル
@@ -260,7 +260,7 @@ initialFundingUsdc = computeInitialFunding(playLog) // pure, capped at 100
 |-------|-------|--------|---------|
 | **Gensyn AXL** | 3 | **メイン** | OPTION commit で multi-agent 化、誕生サーバー × Agent ランタイム × 対戦相手 Agent の **3 ノード以上 P2P 通信**、複数ノード要件を depth で過剰達成 |
 | **0G Autonomous Agents** | 3 | **メイン** | Agent = iNFT (ERC-7857)、Storage で persistent memory、Compute で sealed inference design derivation |
-| **ENS Creative** | 3 | **メイン** | `{name}.openagents.eth` 自動付与、`design-log` `combat-power` を verifiable text record (verifiable credential) として埋める = creative use |
+| **ENS Creative** | 3 | **メイン** | `{name}.gradiusweb3.eth` 自動付与、`design-log` `combat-power` を verifiable text record (verifiable credential) として埋める = creative use |
 | 0G Framework / Tooling | 2 | サブ | Agent Gradius そのものが「agent design framework」として応募可、working example agent 同梱 |
 | Uniswap | 2 | サブ | DeFi タスク例として swap 実装、`FEEDBACK.md` 必須 |
 | KeeperHub | 1 | 任意 | tx 実行時に integration、深さは時間次第 |

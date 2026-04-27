@@ -1,5 +1,5 @@
 {
-  "name": "@openagents/frontend",
+  "name": "@gradiusweb3/frontend",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@openagents/shared": "workspace:*",
+    "@gradiusweb3/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

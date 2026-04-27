@@ -1,4 +1,4 @@
-import type { AgentProfile } from '@openagents/shared/browser';
+import type { AgentProfile } from '@gradiusweb3/shared/browser';
 
 const AXES: (keyof Omit<AgentProfile, 'combatPower'>)[] = [
   'attack',
