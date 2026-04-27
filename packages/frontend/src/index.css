@@ -1,17 +1,8 @@
 :root {
-  font-family: "Space Grotesk", "IBM Plex Sans JP", sans-serif;
-  color: #fefae0;
-  background: radial-gradient(
-      circle at top left,
-      rgba(250, 237, 205, 0.16),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(255, 107, 107, 0.18),
-      transparent 26%
-    ), linear-gradient(135deg, #081420 0%, #13293d 45%, #601848 100%);
-  line-height: 1.5;
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  color: #f5f5f0;
+  background: #0a0a0a;
+  line-height: 1.55;
   font-weight: 400;
   color-scheme: dark;
 }

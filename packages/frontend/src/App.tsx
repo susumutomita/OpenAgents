@@ -2,137 +2,209 @@ import {
   type PlayLog,
   type StoredAgentBirth,
   createAgentBirthDraft,
-} from '@openagents/shared/browser';
-import { useEffect, useRef, useState } from 'react';
+  shortAddress,
+} from '@gradiusweb3/shared/browser';
+import {
+  type CSSProperties,
+  type Ref,
+  forwardRef,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useAccount } from 'wagmi';
 import { AgentDashboard } from './components/AgentDashboard';
 import { BirthArcade } from './components/BirthArcade';
 import { ConnectButton } from './components/ConnectButton';
+import { Fighter } from './components/Fighter';
+import { Callout, HUDCorners, Reticle } from './components/HUD';
 import type { Archetype } from './game/runtime';
 
-const ENEMIES = [
+const A = {
+  bg: '#05080c',
+  bgAlt: '#08111a',
+  panel: '#0a1118',
+  ink: '#e6f1ff',
+  mute: '#5a6c80',
+  rule: '#1a2735',
+  acid: '#c8ff00',
+  hud: '#7ee0ff',
+  amber: '#ffb84d',
+  hot: '#ff4438',
+  green: '#3dffa3',
+  body: '#a8b8c8',
+} as const;
+
+const ARCHETYPES = [
   {
+    id: '01',
     name: 'SPEED',
-    color: '#ff8db3',
     short: 'Fast but shallow',
-    detail:
-      'Real-time reactions, snap decisions. Cheap latency. Loses depth on long-running judgments.',
-  },
-  {
-    name: 'LASER',
-    color: '#ff5252',
-    short: 'Accurate but slow',
-    detail:
-      'High-precision reasoning. Gives you pinpoint actions but burns budget per call.',
-  },
-  {
-    name: 'OPTION',
-    color: '#40f070',
-    short: 'Parallel but uncertain',
-    detail:
-      'Spawns peer agents over AXL. Massive parallelism but coordination overhead and drift risk.',
-  },
-  {
-    name: 'SHIELD',
-    color: '#7bdff2',
-    short: 'Safe but conservative',
-    detail:
-      'Guardrails, retries, circuit breakers. Trades upside for safe operation.',
-  },
-  {
-    name: 'MISSILE',
-    color: '#c084ff',
-    short: 'Powerful but external-reliant',
-    detail:
-      'Tool use, third-party APIs, retrieval. Capability ceiling jumps; failure surface widens.',
-  },
-];
-
-const MOAI_CONSTRAINTS = [
-  'Gas fees',
-  'Latency',
-  'Security rules',
-  'API limits',
-  'Rate limits',
-  'Hallucination risk',
-];
-
-const AGENT_EXAMPLES = [
-  {
-    name: 'AEGIS TREASURY',
-    color: '#7bdff2',
-    summary: 'Capital Preservation',
-    sub: 'Low risk · Circuit breakers',
-    body: 'Conservative onchain agent. USDC-heavy, capped drawdown, multi-sig confirmations. Sleeps in cold storage; wakes for high-conviction signals.',
-  },
-  {
-    name: 'AXL COORDINATOR',
-    color: '#c084ff',
-    summary: 'Peer Execution',
-    sub: 'AXL swarm · Bounded drift',
-    body: 'OPTION-heavy. Eight peers over AXL coordinate around emerging meta. Edge comes from collective speed; failures are expensive but bounded.',
-  },
-  {
-    name: 'RAZOR ROUTER',
-    color: '#f8d840',
-    summary: 'High Conviction',
-    sub: 'Precise swaps · Slippage-aware',
-    body: 'LASER-heavy. Concentrated positions, deep reasoning before each shot. Trades less often, but each trade is decisive.',
-  },
-];
-
-const STACK = [
-  {
-    name: 'OPTION',
-    desc: 'Multi-agent orchestration via Gensyn AXL peer mesh.',
-    color: '#40f070',
-  },
-  {
-    name: 'MISSILE',
-    desc: 'Tool use & external APIs (Uniswap, KeeperHub, RPC).',
-    color: '#c084ff',
-  },
-  {
-    name: 'SHIELD',
-    desc: 'Guardrails, drawdown caps, MEV protection, circuit breakers.',
-    color: '#7bdff2',
-  },
-  {
-    name: 'LASER',
-    desc: 'High-precision reasoning via 0G Compute sealed inference.',
-    color: '#ff5252',
-  },
-  {
-    name: 'SPEED',
-    desc: 'Fast real-time processing on low-latency L2s.',
+    body: 'Real-time reactions, snap decisions. Cheap latency. Loses depth on long-running judgments.',
+    tag: 'PINK',
     color: '#ff8db3',
   },
+  {
+    id: '02',
+    name: 'LASER',
+    short: 'Accurate but slow',
+    body: 'High-precision reasoning. Pinpoint actions but burns budget per call.',
+    tag: 'RED',
+    color: '#ff5252',
+  },
+  {
+    id: '03',
+    name: 'OPTION',
+    short: 'Parallel but uncertain',
+    body: 'Spawns peer agents. Massive parallelism, coordination overhead, drift risk.',
+    tag: 'GREEN',
+    color: '#40f070',
+  },
+  {
+    id: '04',
+    name: 'SHIELD',
+    short: 'Safe but conservative',
+    body: 'Guardrails, retries, circuit breakers. Trades upside for safe operation.',
+    tag: 'CYAN',
+    color: '#7bdff2',
+  },
+  {
+    id: '05',
+    name: 'MISSILE',
+    short: 'Powerful but external-reliant',
+    body: 'Tool use, third-party APIs, retrieval. Capability ceiling jumps; failure surface widens.',
+    tag: 'PURPLE',
+    color: '#c084ff',
+  },
+  {
+    id: '06',
+    name: 'MOAI',
+    short: 'The constraints you cannot shoot',
+    body: 'Gas, latency, security policy, API limits, hallucination risk. Dodge or die.',
+    tag: 'BOSS',
+    color: A.hot,
+  },
+] as const;
+
+type ForgeStatus = 'open' | 'gate' | 'live' | 'critical';
+
+const STATUS_DISPLAY: Record<ForgeStatus, { color: string; label: string }> = {
+  open: { color: A.mute, label: '○ OPEN' },
+  gate: { color: A.ink, label: '▲ GATE' },
+  live: { color: A.acid, label: '● LIVE' },
+  critical: { color: A.hot, label: '◆ CRIT' },
+};
+
+const FORGE_FLOW: Array<[string, string, string, string, ForgeStatus]> = [
+  [
+    'STEP_01',
+    'T-60s',
+    'Insert coin · move · auto-fire',
+    'WASD or arrow keys. Color you destroy most decides your archetype.',
+    'live',
+  ],
+  [
+    'STEP_02',
+    'T-00s',
+    'Stage clear → play log finalised',
+    'Deterministic capture: each shot, hit, dodge, and Moai survival.',
+    'gate',
+  ],
+  [
+    'STEP_03',
+    'POST',
+    'Play log → profile → policy',
+    'Pure functions in `packages/shared/src/forge.ts`. Same log, same agent.',
+    'open',
+  ],
+  [
+    'STEP_04',
+    'POST',
+    'Wallet derived in browser',
+    'Web Crypto SubtleCrypto seeds the agent wallet from play log hash.',
+    'open',
+  ],
+  [
+    'STEP_05',
+    'CHAIN',
+    'ENS subname registered',
+    '{handle}.gradiusweb3.eth + verifiable text records (combat-power, archetype, design-hash).',
+    'critical',
+  ],
+  [
+    'STEP_06',
+    'CHAIN',
+    'iNFT minted on 0G',
+    'ERC-7857-style: agent body, policy blob, play log hash all on-chain.',
+    'critical',
+  ],
+  [
+    'STEP_07',
+    'CHAIN',
+    'Uniswap routing unlocked',
+    'Agent executes its first swap on Sepolia. FEEDBACK.md captures DX learnings.',
+    'critical',
+  ],
 ];
 
-const WEB3_INFRA = [
+const SPONSOR_PAYLOAD = [
   {
-    name: 'ENS',
-    sub: 'On-chain Agent Identity',
-    body: 'Each agent gets `{handle}.openagents.eth` with verifiable text records (combat power, archetype, design hash). The credential travels with the iNFT.',
+    code: '0G',
+    prize: '$15,000',
+    weight: 60,
+    role: 'iNFT body + storage + sealed compute',
+    body: 'ERC-7857-style iNFT for the agent body. play_log + memory in 0G Storage. Profile derivation runs as sealed inference on 0G Compute.',
+    where: 'contracts/src/AgentForgeINFT.sol · packages/shared/src/forge.ts',
+    color: A.acid,
   },
   {
-    name: 'AXL',
-    sub: 'Agent eXchange Layer',
-    body: 'Gensyn peer-to-peer mesh — OPTION commits literally spawn additional encrypted nodes. No central broker, no rate-limited middleman.',
+    code: 'ENS',
+    prize: '$5,000',
+    weight: 20,
+    role: 'On-chain agent identity (Creative track)',
+    body: 'Auto-issued subname `{handle}.gradiusweb3.eth` with verifiable text records. The credential is portable, the iNFT carries it.',
+    where: 'contracts/src/AgentForgeSubnameRegistry.sol',
+    color: A.hud,
   },
   {
-    name: '0G',
-    sub: 'Zero-Gravity Data Layer',
-    body: 'Persistent agent memory in 0G Storage; profile derivation runs as sealed inference on 0G Compute. Anyone can verify the design log.',
+    code: 'UNI',
+    prize: '$5,000',
+    weight: 20,
+    role: "Agent's real on-chain action",
+    body: 'Sepolia swap via Uniswap API closes the loop: play → forge → trade. FEEDBACK.md documents DX friction.',
+    where: 'FEEDBACK.md',
+    color: A.hot,
   },
 ];
 
-const DIFF_ROWS = [
-  ['Design', 'Complex configs', 'Play to Design'],
-  ['Visibility', 'Black box', 'Transparent tradeoffs'],
-  ['Reproducibility', 'Low', 'High (deterministic)'],
-  ['Learning curve', 'Steep', 'Fun & intuitive'],
-  ['Outcome', 'Unpredictable', 'Explainable & tunable'],
+const SPONSOR_TIERS: Array<[string, string[]]> = [
+  ['PRIMARY', ['0G $15K', 'ENS $5K', 'UNISWAP $5K']],
+  ['INFRA', ['VITE', 'REACT_19', 'VIEM', 'WAGMI', 'FOUNDRY', 'BUN', 'BIOME']],
+  ['CHAINS', ['SEPOLIA', 'BASE_SEPOLIA', 'OP_SEPOLIA', 'ARB_SEPOLIA']],
+];
+
+const DIFF_ROWS: Array<[string, string, string]> = [
+  [
+    'DESIGN_SURFACE',
+    'complex configs / abstract sliders',
+    'play to design (visible tradeoffs)',
+  ],
+  ['TRADEOFF_VISIBILITY', 'black box', 'every shot is a vote — explicit'],
+  [
+    'REPRODUCIBILITY',
+    'low (settings drift)',
+    'high (deterministic from play log)',
+  ],
+  [
+    'LEARNING_CURVE',
+    'steep · read docs to start',
+    'mario 1-1 · 2-second tutorial',
+  ],
+  [
+    'WEB3_INTEGRATION',
+    'bolted on later',
+    'native (iNFT + ENS + UNI from day 1)',
+  ],
 ];
 
 export function App() {
@@ -142,7 +214,7 @@ export function App() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const arcadeRef = useRef<HTMLDivElement | null>(null);
-  const { address: ownerAddress, isConnected } = useAccount();
+  const { address: ownerAddress } = useAccount();
 
   async function handleComplete(playLog: PlayLog, derivedArchetype: Archetype) {
     try {
@@ -150,15 +222,10 @@ export function App() {
       setError('');
       const pilot = playerName.trim() || 'Pilot';
       const draft = await createAgentBirthDraft(pilot, playLog);
-      // The connected wallet owns the agent. Falls back to the deterministic
-      // pseudo-wallet when no wallet is connected so the demo still works.
       const stored: StoredAgentBirth = {
         ...draft,
         agent: ownerAddress
-          ? {
-              ...draft.agent,
-              walletAddress: ownerAddress,
-            }
+          ? { ...draft.agent, walletAddress: ownerAddress }
           : draft.agent,
         createdAt: new Date().toISOString(),
       };
@@ -172,7 +239,6 @@ export function App() {
       setSubmitting(false);
     }
   }
-  void isConnected;
 
   function jumpToArcade() {
     arcadeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -186,510 +252,1279 @@ export function App() {
   }, [birth]);
 
   return (
-    <div className="landing">
-      <NavBar onPlay={jumpToArcade} />
-
+    <div style={S.shell}>
+      <StatusBar />
+      <Nav onPlay={jumpToArcade} />
       <Hero
         playerName={playerName}
         onNameChange={setPlayerName}
         onPlay={jumpToArcade}
+        birth={birth}
       />
-
-      <Section
-        index="01"
-        title="Designing AI agents is too hard"
-        subtitle="The Problem"
-      >
-        <div className="problem-grid">
-          <ul className="x-list">
-            <li>Too many settings, too many tradeoffs.</li>
-            <li>Hard to know what actually matters.</li>
-            <li>Outcomes inconsistent and hard to reproduce.</li>
-          </ul>
-          <div className="quote-card">Complex. Opaque. Trial and error.</div>
-        </div>
-      </Section>
-
-      <Section
-        index="02"
-        title="Tradeoffs are invisible"
-        subtitle="Root Cause"
-        accent="warn"
-      >
-        <p className="lede">
-          Every decision an agent makes has a cost. Today, those costs hide in
-          abstract settings. Builders end up choosing settings → hoping for the
-          best → seeing unpredictable outcomes.
-        </p>
-        <div className="flow-row">
-          <FlowChip label="CHOOSE SETTINGS" />
-          <FlowArrow />
-          <FlowChip label="HOPE FOR THE BEST" />
-          <FlowArrow />
-          <FlowChip label="UNPREDICTABLE OUTCOME" tone="warn" />
-        </div>
-      </Section>
-
-      <Section
-        index="03"
-        title="Make it a game"
-        subtitle="The Solution"
-        accent="ok"
-      >
-        <p className="lede">
-          We turn agent design into a space shooter. Constraints become enemies.
-          Decisions become shots. The agent that survives is the agent you've
-          designed.
-        </p>
-        <ul className="check-list">
-          <li>
-            See tradeoffs as <strong>enemies</strong>.
-          </li>
-          <li>
-            Make decisions by <strong>shooting</strong>.
-          </li>
-          <li>Survive constraints (the Moai).</li>
-          <li>Your agent is born from your playstyle.</li>
-        </ul>
-      </Section>
-
-      <Section index="04" title="How it works" subtitle="3 Steps">
-        <div className="step-row">
-          <StepCard
-            num="1"
-            title="Play"
-            body="Tradeoffs appear as enemies. You decide which ones to shoot, which to dodge."
-          />
-          <StepCard
-            num="2"
-            title="Survive the Moai"
-            body="Constraints (gas, latency, hallucination) attack relentlessly. Stay alive."
-          />
-          <StepCard
-            num="3"
-            title="Your agent is born"
-            body="The way you played becomes a unique AI agent: archetype, allocation, policy."
-          />
-        </div>
-        <div className="pipeline">
-          <span>Your decisions</span>
-          <span className="pipeline-arrow">→</span>
-          <span>Agent config</span>
-          <span className="pipeline-arrow">→</span>
-          <span>Personality</span>
-          <span className="pipeline-arrow">→</span>
-          <span>Ready to deploy</span>
-        </div>
-      </Section>
-
-      <Section
-        index="05"
-        title="Tradeoff enemies"
-        subtitle="Each shot is a decision"
-        accent="cyan"
-      >
-        <div className="enemy-grid">
-          {ENEMIES.map((enemy) => (
-            <article
-              key={enemy.name}
-              className="enemy-card"
-              style={{ borderColor: enemy.color }}
-            >
-              <header style={{ color: enemy.color }}>{enemy.name}</header>
-              <strong>{enemy.short}</strong>
-              <p>{enemy.detail}</p>
-            </article>
-          ))}
-        </div>
-      </Section>
-
-      <Section
-        index="06"
-        title="The Moai constraints"
-        subtitle="You can't avoid them. You can prepare."
-      >
-        <div className="moai-grid">
-          <ul className="moai-list">
-            {MOAI_CONSTRAINTS.map((constraint) => (
-              <li key={constraint}>{constraint}</li>
-            ))}
-          </ul>
-          <div className="moai-side">
-            <p>
-              Every real-world AI agent runs into the same wall: gas, latency,
-              security policy, API throughput, hallucinations. Ignore them and
-              your agent dies in production. The game forces you to face them.
-            </p>
-            <p className="quote-line">Ignore them, and you lose.</p>
-          </div>
-        </div>
-      </Section>
-
-      <Section
-        index="07"
-        title="Different playstyles, different agents"
-        subtitle="Sample Outcomes"
-      >
-        <div className="agent-grid">
-          {AGENT_EXAMPLES.map((agent) => (
-            <article
-              key={agent.name}
-              className="agent-card"
-              style={{ borderColor: agent.color }}
-            >
-              <header style={{ color: agent.color }}>{agent.name}</header>
-              <strong>{agent.summary}</strong>
-              <em>{agent.sub}</em>
-              <p>{agent.body}</p>
-            </article>
-          ))}
-        </div>
-        <p className="footnote">
-          There's no single best agent. Only the right agent for you.
-        </p>
-      </Section>
-
-      <Section
-        index="08"
-        title="Design = decisions under tradeoffs"
-        subtitle="Core Concept"
-      >
-        <p className="lede">
-          Every meaningful agent capability has a cost. Speed costs depth.
-          Precision costs throughput. Multi-agent costs coordination. We make
-          those tradeoffs visible so you can <em>design with intent</em>.
-        </p>
-      </Section>
-
-      <Section
-        index="09"
-        title="What's under the hood"
-        subtitle="Agent capability stack"
-      >
-        <div className="stack-grid">
-          {STACK.map((item) => (
-            <article
-              key={item.name}
-              className="stack-card"
-              style={{ borderColor: item.color }}
-            >
-              <span style={{ color: item.color }}>{item.name}</span>
-              <p>{item.desc}</p>
-            </article>
-          ))}
-        </div>
-      </Section>
-
-      <Section
-        index="10"
-        title="Built for the agent economy"
-        subtitle="Web3 infrastructure"
-        accent="cyan"
-      >
-        <div className="web3-grid">
-          {WEB3_INFRA.map((entry) => (
-            <article key={entry.name} className="web3-card">
-              <header>{entry.name}</header>
-              <small>{entry.sub}</small>
-              <p>{entry.body}</p>
-            </article>
-          ))}
-        </div>
-      </Section>
-
-      <Section
-        index="11"
-        title="Why we're different"
-        subtitle="Differentiation"
-      >
-        <div className="diff-table">
-          <div className="diff-row diff-head">
-            <span />
-            <span>Traditional Approach</span>
-            <span>Our Approach</span>
-          </div>
-          {DIFF_ROWS.map(([metric, traditional, ours]) => (
-            <div key={metric} className="diff-row">
-              <span className="diff-metric">{metric}</span>
-              <span className="diff-bad">{traditional}</span>
-              <span className="diff-good">{ours}</span>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section index="12" title="Why now" subtitle="Timing">
-        <ul className="why-list">
-          <li>AI agents are everywhere.</li>
-          <li>Autonomy is increasing.</li>
-          <li>But the UX for agent design hasn't evolved.</li>
-        </ul>
-        <p className="big-line">It's time for a new paradigm.</p>
-      </Section>
-
-      <Section
-        index="13"
-        title="Agent design for everyone"
-        subtitle="Vision"
-        accent="cyan"
-      >
-        <p className="lede">
-          From developers to domain experts, anyone can create and understand
-          powerful AI agents. Web3 makes them ownable, transparent, and
-          composable.
-        </p>
-      </Section>
-
-      <div className="arcade-anchor" ref={arcadeRef}>
-        <Section
-          index="DEMO"
-          title="Insert 1 coin · 60s · forge an agent"
-          subtitle="Live arcade"
-          accent="warn"
-        >
-          <BirthArcade disabled={submitting} onComplete={handleComplete} />
-          {error ? <p className="error-banner">{error}</p> : null}
-          {submitting ? (
-            <p className="status-banner">Forging agent from play log…</p>
-          ) : null}
-        </Section>
-      </div>
-
+      <ArchetypesSection />
+      <ForgeProtocolSection />
+      <SponsorPayloadSection />
+      <DifferentiationSection />
+      <SponsorsSection />
+      <ArcadeSection
+        ref={arcadeRef}
+        disabled={submitting}
+        onComplete={handleComplete}
+        error={error}
+        submitting={submitting}
+      />
       {birth && archetype ? (
-        <div id="dashboard">
-          <Section
-            index="OUT"
-            title="Your agent"
-            subtitle="Forged from your playstyle"
-          >
-            <AgentDashboard birth={birth} archetype={archetype} />
-          </Section>
-        </div>
+        <DashboardSection birth={birth} archetype={archetype} />
       ) : null}
-
-      <FinalCTA onPlay={jumpToArcade} />
-      <Footer />
+      <CTASection onPlay={jumpToArcade} />
+      <FooterBar />
     </div>
   );
 }
 
-function NavBar({ onPlay }: { onPlay: () => void }) {
+function formatUtc(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+}
+
+function StatusCell({ k, v, color }: { k: string; v: string; color?: string }) {
   return (
-    <nav className="nav">
-      <div className="nav-brand">
-        <span className="brand-mark">GR@DIUS</span>
-        <span className="brand-tag">WEB3</span>
-      </div>
-      <div className="nav-links">
-        <a href="#how">How</a>
-        <a href="#stack">Stack</a>
-        <a href="#why">Why now</a>
-        <a
-          href="https://github.com/susumutomita/OpenAgents"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub
-        </a>
-      </div>
-      <ConnectButton />
-      <button type="button" className="nav-cta" onClick={onPlay}>
-        ▶ Play
-      </button>
-    </nav>
+    <span style={{ display: 'inline-flex', gap: 8, alignItems: 'baseline' }}>
+      <span style={{ color: A.mute }}>{k}</span>
+      <span
+        style={{ color: color || A.ink, fontVariantNumeric: 'tabular-nums' }}
+      >
+        {v}
+      </span>
+    </span>
   );
 }
+
+function StatusBar() {
+  const [clock, setClock] = useState(() => formatUtc(new Date()));
+  useEffect(() => {
+    const id = setInterval(() => setClock(formatUtc(new Date())), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div style={S.statusBar}>
+      <span>
+        <span style={{ color: A.green }}>●</span> NETWORK_ONLINE ·
+        GR@DIUS_FORGE_v1.0
+      </span>
+      <StatusCell k="ICAO" v="GNSH" />
+      <StatusCell k="HDG" v="027°" color={A.hud} />
+      <StatusCell k="CHAIN" v="SEPOLIA" color={A.hud} />
+      <StatusCell k="UTC" v={clock} color={A.green} />
+      <StatusCell k="OP" v="ETHGLOBAL_TOKYO" />
+      <span style={{ color: A.amber, justifySelf: 'end' }}>
+        ◆ MASTER_ARM · OPEN
+      </span>
+    </div>
+  );
+}
+
+function Nav({ onPlay }: { onPlay: () => void }) {
+  return (
+    <div style={S.nav}>
+      <div style={S.logo}>
+        <span style={{ color: A.acid }}>▮▮</span> GR@DIUS
+        <span style={{ color: A.mute }}>/WEB3</span>
+      </div>
+      <div style={S.navLinks}>
+        <a href="#tradeoffs" style={S.navLink}>
+          [01] Tradeoffs
+        </a>
+        <a href="#forge" style={S.navLink}>
+          [02] Forge
+        </a>
+        <a href="#sponsors" style={S.navLink}>
+          [03] Payload
+        </a>
+        <a href="#arcade" style={S.navLink}>
+          [04] Arcade
+        </a>
+        <a
+          href="https://github.com/susumutomita/Gr-diusWeb3"
+          target="_blank"
+          rel="noreferrer"
+          style={S.navLink}
+        >
+          [05] GitHub
+        </a>
+      </div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <ConnectButton />
+        <button type="button" style={S.applyBtn} onClick={onPlay}>
+          ▶ Insert Coin
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const SPEC_ROWS: Array<[string, string]> = [
+  ['ROLE', 'Autonomous DeFi · multi-chain'],
+  ['CREW', '1 (player → agent)'],
+  ['PROPULSION', '2× WebCrypto turbofan'],
+  ['AVIONICS', '0G storage · ERC-7857 iNFT'],
+  ['ARMAMENT', 'ENS subname · Uniswap router'],
+  ['DATALINK', 'wagmi + viem · EIP-1193'],
+  ['CEILING', '∞ · permissionless'],
+];
+
+const SPEC_STATS: Array<[string, string]> = [
+  ['SPD', '60 fps'],
+  ['G', '+9.0'],
+  ['RNG', 'GLOBAL'],
+];
+
+const FOOTER_LINKS: Array<[string, string]> = [
+  ['GITHUB', 'https://github.com/susumutomita/Gr-diusWeb3'],
+  [
+    'SPEC',
+    'https://github.com/susumutomita/Gr-diusWeb3/blob/main/docs/specs/2026-04-26-agent-forge.md',
+  ],
+  [
+    'PRIZES',
+    'https://github.com/susumutomita/Gr-diusWeb3/tree/main/docs/prizes',
+  ],
+  [
+    'FEEDBACK',
+    'https://github.com/susumutomita/Gr-diusWeb3/blob/main/FEEDBACK.md',
+  ],
+];
 
 function Hero({
   playerName,
   onNameChange,
   onPlay,
+  birth,
 }: {
   playerName: string;
-  onNameChange: (value: string) => void;
+  onNameChange: (v: string) => void;
   onPlay: () => void;
+  birth: StoredAgentBirth | null;
 }) {
   return (
-    <header className="hero hero-grand">
-      <div className="hero-grid">
-        <div className="hero-copy">
-          <span className="hero-eyebrow">PLAY TO DESIGN YOUR AI AGENT</span>
-          <h1>
-            KILL THE
-            <span className="hero-y"> TRADEOFFS</span>
-          </h1>
-          <p className="hero-lede">
-            The game that turns invisible tradeoffs into the perfect AI agent.
-            Survive 60 seconds in a Konami-grade pixel shooter and walk away
-            with an onchain agent designed by your reflexes.
+    <section style={S.hero}>
+      <svg
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+        }}
+        preserveAspectRatio="none"
+        viewBox="0 0 1440 900"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="horizon" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor="#0a1a26" />
+            <stop offset="0.55" stopColor="#06121c" />
+            <stop offset="0.56" stopColor="#030608" />
+            <stop offset="1" stopColor="#020406" />
+          </linearGradient>
+        </defs>
+        <rect width="1440" height="900" fill="url(#horizon)" />
+        <ellipse
+          cx="1080"
+          cy="500"
+          rx="380"
+          ry="60"
+          fill="#3a8aa8"
+          opacity="0.14"
+        />
+        <ellipse
+          cx="1080"
+          cy="500"
+          rx="180"
+          ry="20"
+          fill="#7ee0ff"
+          opacity="0.08"
+        />
+        <g stroke="#3a8aa8" strokeWidth="1" opacity="0.4">
+          {Array.from({ length: 14 }).map((_, i) => {
+            const x = 720 + (i - 7) * 14;
+            return (
+              <line
+                key={`run-${x}`}
+                x1={720}
+                y1={520}
+                x2={x * 8 - 720 * 7}
+                y2={900}
+              />
+            );
+          })}
+          {[540, 580, 640, 720, 820].map((y, i) => (
+            <line
+              key={`hz-${y}`}
+              x1="0"
+              y1={y}
+              x2="1440"
+              y2={y}
+              opacity={0.15 + i * 0.05}
+            />
+          ))}
+        </g>
+        <g stroke={A.amber} strokeWidth="2" opacity="0.5">
+          <line x1="720" y1="540" x2="720" y2="900" strokeDasharray="6 18" />
+        </g>
+      </svg>
+
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          backgroundImage: `radial-gradient(circle at 20% 30%, ${A.hud}11, transparent 40%), radial-gradient(circle at 80% 70%, ${A.amber}0a, transparent 50%)`,
+        }}
+      />
+
+      <div style={{ position: 'relative', padding: '32px 0 64px' }}>
+        <div style={S.missionHeader}>
+          <div>
+            <span style={{ color: A.amber }}>▸ MISSION FILE</span>
+            <span style={{ margin: '0 14px', color: A.rule }}>│</span>
+            CLASSIFICATION: OPEN-SOURCE
+            <span style={{ margin: '0 14px', color: A.rule }}>│</span>
+            CALLSIGN: GR@DIUS
+            <span style={{ margin: '0 14px', color: A.rule }}>│</span>
+            OP: AGENT_FORGE
+          </div>
+          <div>SHEET 01 / 06</div>
+        </div>
+
+        <div style={S.heroStage}>
+          <div style={S.fighterFrame}>
+            <Fighter width={1180} mode="silhouette" />
+          </div>
+
+          <div style={{ position: 'absolute', top: '6%', left: '62%' }}>
+            <Reticle size={140} label="TGT · AGENT-FORGE" color={A.amber} />
+          </div>
+          <div style={{ position: 'absolute', top: '60%', left: '14%' }}>
+            <Reticle size={100} label="WPT · INSERT_COIN" color={A.hud} />
+          </div>
+
+          <Callout
+            x="58%"
+            y="24%"
+            label="CANOPY"
+            sub="Bubble · 360° vis"
+            color={A.hud}
+          />
+          <Callout
+            x="12%"
+            y="26%"
+            label="F100-PW"
+            sub="2× WebCrypto turbofan"
+            color={A.hud}
+          />
+          <Callout
+            x="22%"
+            y="74%"
+            label="AIM-9X"
+            sub="ENS · subname missile"
+            color={A.amber}
+            flip
+          />
+          <Callout
+            x="66%"
+            y="74%"
+            label="LINK-16"
+            sub="0G storage · datalink"
+            color={A.hud}
+            flip
+          />
+
+          <div style={S.heroBanner}>── INSERT COIN · 60 SECONDS ──</div>
+        </div>
+
+        <div style={S.heroLower}>
+          <div>
+            <h1 style={S.heroH1}>
+              KILL THE
+              <br />
+              TRADEOFFS.
+              <br />
+              <span style={S.heroH1Italic}>fly your agent.</span>
+            </h1>
+            <p style={S.heroLede}>
+              Gr<span style={{ color: A.hud }}>@</span>dius is a 60-second
+              arcade dogfight that doubles as the world's fastest onboarding for
+              autonomous on-chain agents. Stick. Throttle. Trigger.{' '}
+              <span style={{ color: A.ink }}>
+                The agent that survives is the agent you ship.
+              </span>
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                marginTop: 32,
+                alignItems: 'stretch',
+                flexWrap: 'wrap',
+              }}
+            >
+              <button type="button" style={S.amberBtn} onClick={onPlay}>
+                <span style={{ marginRight: 10 }}>▸</span> CLEARED FOR TAKEOFF
+              </button>
+              <a
+                href="https://github.com/susumutomita/Gr-diusWeb3"
+                target="_blank"
+                rel="noreferrer"
+                style={S.cyanBtn}
+              >
+                ░ READ_FLIGHT_MANUAL
+              </a>
+            </div>
+            <div style={S.pilotForm}>
+              <label htmlFor="hero-pilot" style={S.pilotLabel}>
+                ▸ PILOT_CALLSIGN
+              </label>
+              <input
+                id="hero-pilot"
+                value={playerName}
+                onChange={(e) => onNameChange(e.target.value)}
+                placeholder="Kotetsu"
+                maxLength={16}
+                style={S.pilotInput}
+              />
+            </div>
+            <div style={S.countStrip}>
+              {[
+                ['60s', 'BUILD_WINDOW'],
+                ['5+1', 'ARCHETYPES'],
+                ['$25K', 'PRIZE_TARGET'],
+                ['1', 'iNFT_PER_RUN'],
+              ].map(([n, l], i) => (
+                <div
+                  key={l}
+                  style={{
+                    padding: '20px 16px',
+                    borderRight: i < 3 ? `1px solid ${A.rule}` : 'none',
+                  }}
+                >
+                  <div style={S.countNum}>{n}</div>
+                  <div style={S.countLabel}>{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={S.specCard}>
+            <HUDCorners color={A.hud} />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+              }}
+            >
+              <span
+                style={{
+                  color: A.amber,
+                  letterSpacing: '0.24em',
+                  fontSize: 11,
+                }}
+              >
+                ◆ AIRCRAFT 01-A
+              </span>
+              <span
+                style={{ color: A.mute, letterSpacing: '0.24em', fontSize: 11 }}
+              >
+                SPEC SHEET
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: 22,
+                color: A.ink,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                marginBottom: 4,
+              }}
+            >
+              GR-15 EAGLE / @
+            </div>
+            <div
+              style={{
+                color: A.mute,
+                letterSpacing: '0.18em',
+                marginBottom: 18,
+                fontSize: 11,
+              }}
+            >
+              MULTI-ROLE · ON-CHAIN AIR-SUPERIORITY
+            </div>
+            {SPEC_ROWS.map(([k, v], i) => (
+              <div
+                key={k}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '110px 1fr',
+                  padding: '7px 0',
+                  borderBottom:
+                    i < SPEC_ROWS.length - 1 ? `1px dashed ${A.rule}` : 'none',
+                  fontSize: 11,
+                }}
+              >
+                <span style={{ color: A.mute, letterSpacing: '0.18em' }}>
+                  {k}
+                </span>
+                <span style={{ color: A.ink }}>{v}</span>
+              </div>
+            ))}
+            <div style={S.specStats}>
+              {SPEC_STATS.map(([k, v]) => (
+                <div key={k} style={{ textAlign: 'center' }}>
+                  <div
+                    style={{
+                      color: A.hud,
+                      fontSize: 18,
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {v}
+                  </div>
+                  <div
+                    style={{
+                      color: A.mute,
+                      fontSize: 9,
+                      letterSpacing: '0.24em',
+                    }}
+                  >
+                    {k}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {birth ? (
+              <div style={S.specForgeRow}>
+                <div
+                  style={{
+                    color: A.green,
+                    fontSize: 10,
+                    letterSpacing: '0.24em',
+                    marginBottom: 6,
+                  }}
+                >
+                  ◆ AIRBORNE · LAST_FORGE
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: 4,
+                    fontSize: 11,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  <div>
+                    PILOT{' '}
+                    <span style={{ color: A.ink }}>{birth.agent.ensName}</span>
+                  </div>
+                  <div>
+                    COMBAT_POWER{' '}
+                    <span style={{ color: A.amber }}>
+                      {birth.agent.profile.combatPower.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    WALLET{' '}
+                    <span style={{ color: A.hud }}>
+                      {shortAddress(birth.agent.walletAddress)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ArchetypesSection() {
+  return (
+    <section id="tradeoffs" style={S.section}>
+      <SectionHead
+        num="§ 01 / TRADEOFFS"
+        title="Six enemies. One agent."
+        right="EACH_SHOT_IS_A_VOTE"
+      />
+      <div style={S.gridThree}>
+        {ARCHETYPES.map((t, i) => (
+          <div
+            key={t.id}
+            style={{
+              padding: '28px 24px',
+              borderRight: (i + 1) % 3 !== 0 ? `1px solid ${A.rule}` : 'none',
+              borderBottom: i < 3 ? `1px solid ${A.rule}` : 'none',
+              minHeight: 220,
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div
+                style={{ fontSize: 11, color: A.mute, letterSpacing: '0.2em' }}
+              >
+                ENEMY_{t.id}
+              </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  padding: '3px 8px',
+                  background: t.tag === 'BOSS' ? A.hot : 'transparent',
+                  color: t.tag === 'BOSS' ? A.bg : t.color,
+                  border: t.tag === 'BOSS' ? 'none' : `1px solid ${t.color}`,
+                  letterSpacing: '0.18em',
+                  fontWeight: 700,
+                }}
+              >
+                {t.tag}
+              </div>
+            </div>
+            <h3
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                margin: '14px 0 6px',
+                letterSpacing: '-0.01em',
+                color: t.color,
+              }}
+            >
+              {t.name}
+            </h3>
+            <div
+              style={{
+                fontSize: 14,
+                color: A.ink,
+                fontWeight: 600,
+                marginBottom: 12,
+              }}
+            >
+              {t.short}
+            </div>
+            <p
+              style={{
+                fontSize: 13,
+                color: A.body,
+                margin: 0,
+                lineHeight: 1.55,
+              }}
+            >
+              {t.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ForgeProtocolSection() {
+  return (
+    <section id="forge" style={S.section}>
+      <SectionHead
+        num="§ 02 / FORGE_PROTOCOL"
+        title="Seven steps from joystick to iNFT."
+      />
+      <div style={{ padding: '0 28px' }}>
+        <div style={{ ...S.tableHead }}>
+          <div>STEP</div>
+          <div>PHASE</div>
+          <div>EVENT</div>
+          <div>NOTES</div>
+          <div style={{ textAlign: 'right' }}>STATUS</div>
+        </div>
+        {FORGE_FLOW.map(([d, t, ev, n, s], i) => (
+          <div
+            key={d}
+            style={{
+              ...S.tableRow,
+              borderBottom:
+                i < FORGE_FLOW.length - 1 ? `1px dashed ${A.rule}` : 'none',
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>{d}</div>
+            <div style={{ color: A.mute, fontVariantNumeric: 'tabular-nums' }}>
+              {t}
+            </div>
+            <div style={{ fontWeight: s === 'critical' ? 700 : 500 }}>{ev}</div>
+            <div style={{ color: A.body }}>{n}</div>
+            <div
+              style={{
+                textAlign: 'right',
+                color: STATUS_DISPLAY[s].color,
+                fontSize: 10,
+                letterSpacing: '0.2em',
+                fontWeight: 700,
+              }}
+            >
+              {STATUS_DISPLAY[s].label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SponsorPayloadSection() {
+  return (
+    <section id="sponsors" style={S.section}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr' }}>
+        <div
+          style={{ padding: '60px 28px', borderRight: `1px solid ${A.rule}` }}
+        >
+          <div style={S.sectionEyebrow}>§ 03 / SPONSOR_PAYLOAD</div>
+          <div style={S.bigNumber}>$25K</div>
+          <div style={{ fontSize: 14, color: A.mute, marginTop: 8 }}>
+            target — three load-bearing integrations, no cosmetic name-drops.
+          </div>
+          <p
+            style={{
+              fontSize: 14,
+              color: A.body,
+              maxWidth: 460,
+              marginTop: 36,
+              lineHeight: 1.55,
+            }}
+          >
+            Each prize fits the product narrative.{' '}
+            <span style={{ color: A.ink }}>0G</span> for the agent body and
+            memory. <span style={{ color: A.ink }}>ENS</span> for a portable
+            identity. <span style={{ color: A.ink }}>Uniswap</span> as the
+            agent's first real on-chain action. Gensyn AXL and KeeperHub were
+            dropped to keep depth over breadth.
           </p>
-          <div className="hero-cta">
-            <button type="button" className="primary-button" onClick={onPlay}>
-              ▶ PLAY DEMO
-            </button>
+        </div>
+        <div style={{ padding: '60px 28px' }}>
+          <div style={S.sectionEyebrow}>BREAKDOWN · BY_PRIZE_WEIGHT</div>
+          <div style={{ marginTop: 24 }}>
+            {SPONSOR_PAYLOAD.map((s) => (
+              <div key={s.code} style={{ marginBottom: 26 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: 13,
+                    marginBottom: 6,
+                  }}
+                >
+                  <span>
+                    <strong style={{ color: A.ink }}>{s.code}</strong>{' '}
+                    <span style={{ color: A.mute }}>· {s.role}</span>
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontVariantNumeric: 'tabular-nums',
+                      color: s.color,
+                    }}
+                  >
+                    {s.prize}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    height: 6,
+                    background: '#181815',
+                    position: 'relative',
+                    marginBottom: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: `${s.weight}%`,
+                      background: s.color,
+                    }}
+                  />
+                </div>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: A.body,
+                    margin: 0,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {s.body}
+                </p>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: A.mute,
+                    marginTop: 6,
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  → {s.where}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DifferentiationSection() {
+  return (
+    <section style={S.section}>
+      <SectionHead
+        num="§ 04 / DIFFERENTIATION"
+        title="Why play, not configure."
+      />
+      <div style={{ padding: '0 28px 40px' }}>
+        <div style={S.diffHead}>
+          <span />
+          <span>TRADITIONAL</span>
+          <span style={{ color: A.acid }}>GR@DIUS_WEB3</span>
+        </div>
+        {DIFF_ROWS.map(([metric, bad, good], i) => (
+          <div
+            key={metric}
+            style={{
+              ...S.diffRow,
+              borderBottom:
+                i < DIFF_ROWS.length - 1 ? `1px dashed ${A.rule}` : 'none',
+            }}
+          >
+            <span
+              style={{ fontSize: 11, color: A.mute, letterSpacing: '0.18em' }}
+            >
+              {metric}
+            </span>
+            <span style={{ color: A.body, textDecoration: 'line-through' }}>
+              {bad}
+            </span>
+            <span style={{ color: A.ink, fontWeight: 600 }}>{good}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SponsorsSection() {
+  return (
+    <section style={S.section}>
+      <SectionHead
+        num="§ 05 / STACK"
+        title="Backed by the protocols we build on."
+      />
+      {SPONSOR_TIERS.map(([tier, list], idx) => (
+        <div
+          key={tier}
+          style={{
+            borderBottom:
+              idx < SPONSOR_TIERS.length - 1 ? `1px solid ${A.rule}` : 'none',
+          }}
+        >
+          <div style={S.tierLabel}>
+            ── {tier} ─ ({list.length})
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${list.length}, 1fr)`,
+            }}
+          >
+            {list.map((name, i) => (
+              <div
+                key={name}
+                style={{
+                  padding: tier === 'PRIMARY' ? '28px 8px' : '18px 8px',
+                  borderRight:
+                    i < list.length - 1 ? `1px solid ${A.rule}` : 'none',
+                  fontSize:
+                    tier === 'PRIMARY' ? 22 : tier === 'INFRA' ? 14 : 12,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  textAlign: 'center',
+                  color: tier === 'PRIMARY' ? A.ink : A.mute,
+                }}
+              >
+                {name}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+type ArcadeSectionProps = {
+  disabled: boolean;
+  onComplete: (log: PlayLog, a: Archetype) => void;
+  error: string;
+  submitting: boolean;
+};
+
+const ArcadeSection = forwardRef<HTMLDivElement, ArcadeSectionProps>(
+  function ArcadeSection(
+    { disabled, onComplete, error, submitting },
+    ref: Ref<HTMLDivElement>
+  ) {
+    return (
+      <section id="arcade" ref={ref} style={S.section}>
+        <SectionHead
+          num="§ 06 / ARCADE"
+          title="Insert coin · 60 seconds · forge an agent."
+          right="LIVE_DEMO"
+        />
+        <div style={{ padding: '24px 28px 40px' }}>
+          <BirthArcade disabled={disabled} onComplete={onComplete} />
+          {error ? <div style={S.errorBanner}>! {error}</div> : null}
+          {submitting ? (
+            <div style={S.statusBanner}>▸ FORGING_AGENT_FROM_PLAY_LOG…</div>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+);
+
+function DashboardSection({
+  birth,
+  archetype,
+}: { birth: StoredAgentBirth; archetype: Archetype }) {
+  return (
+    <section id="dashboard" style={S.section}>
+      <SectionHead
+        num="§ 07 / AGENT_DASHBOARD"
+        title="Forged from your playstyle."
+        right="OUTPUT"
+      />
+      <div style={{ padding: '24px 28px 40px' }}>
+        <AgentDashboard birth={birth} archetype={archetype} />
+      </div>
+    </section>
+  );
+}
+
+function CTASection({ onPlay }: { onPlay: () => void }) {
+  return (
+    <section style={S.cta}>
+      <div style={{ padding: '80px 28px 60px', position: 'relative' }}>
+        <div style={{ fontSize: 11, letterSpacing: '0.2em', marginBottom: 16 }}>
+          ▸ FINAL_CALL · NO_MENU · NO_CONFIG · 60s
+        </div>
+        <h2 style={S.ctaH2}>
+          INSERT_
+          <br />
+          COIN.
+        </h2>
+        <div
+          style={{
+            marginTop: 40,
+            display: 'flex',
+            gap: 12,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button type="button" style={S.ctaBtn} onClick={onPlay}>
+            ► PLAY NOW
+          </button>
+          <span style={{ fontSize: 13, marginLeft: 8 }}>
+            or read the spec at{' '}
             <a
-              className="ghost-button"
-              href="https://github.com/susumutomita/OpenAgents"
+              href="https://github.com/susumutomita/Gr-diusWeb3"
               target="_blank"
               rel="noreferrer"
+              style={{ color: A.bg, textDecoration: 'underline' }}
             >
-              ★ STAR ON GITHUB
+              github
             </a>
-          </div>
-          <div className="hero-form">
-            <label htmlFor="hero-pilot">PILOT NAME</label>
-            <input
-              id="hero-pilot"
-              value={playerName}
-              onChange={(event) => onNameChange(event.target.value)}
-              placeholder="Kotetsu"
-              maxLength={16}
-            />
-          </div>
-          <div className="sponsor-row">
-            <SponsorPill name="AXL" sub="Agent eXchange" />
-            <SponsorPill name="ENS" sub="On-chain Identity" />
-            <SponsorPill name="0G" sub="Zero-Gravity Data" />
-            <SponsorPill name="Uniswap" sub="Onchain Liquidity" />
-            <SponsorPill name="KeeperHub" sub="Reliable Execution" />
-          </div>
+          </span>
         </div>
-        <div className="hero-stage">
-          <div className="hero-stage-frame">
-            <div className="hero-arcade-banner">
-              <span>SHIELD</span>
-              <span>SPEED</span>
-              <span>OPTION</span>
-              <span>LASER</span>
-              <span>MISSILE</span>
-            </div>
-            <div className="hero-mock">
-              <div className="hero-mock-stars" />
-              <div className="hero-mock-ship" />
-              <div className="hero-mock-moai" />
-            </div>
-            <div className="hero-arcade-footer">
-              <span className="hero-meta">CONSERVATIVE</span>
-              <span className="hero-meta">BALANCED</span>
-              <span className="hero-meta">AGGRESSIVE</span>
-            </div>
-          </div>
-          <p className="hero-tagline">
-            We don't configure agents.{' '}
-            <strong>We play them into existence.</strong>
-          </p>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function Section({
-  index,
-  title,
-  subtitle,
-  accent,
-  children,
-}: {
-  index: string;
-  title: string;
-  subtitle?: string;
-  accent?: 'cyan' | 'warn' | 'ok';
-  children: React.ReactNode;
-}) {
-  const accentClass = accent ? `section-accent-${accent}` : '';
-  return (
-    <section className={`landing-section ${accentClass}`}>
-      <header className="landing-section-head">
-        <span className="landing-section-index">{index}</span>
-        <div>
-          {subtitle ? (
-            <span className="landing-section-sub">{subtitle}</span>
-          ) : null}
-          <h2>{title}</h2>
-        </div>
-      </header>
-      <div className="landing-section-body">{children}</div>
-    </section>
-  );
-}
-
-function StepCard({
-  num,
-  title,
-  body,
-}: {
-  num: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <article className="step-card">
-      <span className="step-num">{num}</span>
-      <h3>{title}</h3>
-      <p>{body}</p>
-    </article>
-  );
-}
-
-function FlowChip({ label, tone }: { label: string; tone?: 'warn' }) {
-  return (
-    <span className={`flow-chip ${tone ? 'flow-warn' : ''}`}>{label}</span>
-  );
-}
-
-function FlowArrow() {
-  return (
-    <span className="flow-arrow" aria-hidden="true">
-      →
-    </span>
-  );
-}
-
-function SponsorPill({ name, sub }: { name: string; sub: string }) {
-  return (
-    <span className="sponsor-pill">
-      <strong>{name}</strong>
-      <small>{sub}</small>
-    </span>
-  );
-}
-
-function FinalCTA({ onPlay }: { onPlay: () => void }) {
-  return (
-    <section className="final-cta">
-      <div>
-        <h2>
-          We don't configure agents.
-          <br />
-          <em>We play them into existence.</em>
-        </h2>
-        <button type="button" className="primary-button" onClick={onPlay}>
-          ▶ INSERT COIN
-        </button>
       </div>
     </section>
   );
 }
 
-function Footer() {
+function FooterBar() {
   return (
-    <footer className="landing-footer">
-      <div>
-        <strong>Gr@diusWeb3</strong> — Konami homage with original sprites and
-        code. Built during ETHGlobal · Open source · MIT License.
-      </div>
-      <div className="footer-links">
+    <div style={S.footer}>
+      <span>© 2026 GR@DIUS_WEB3 · MIT LICENSE · ETHGLOBAL</span>
+      {FOOTER_LINKS.map(([label, href]) => (
         <a
-          href="https://github.com/susumutomita/OpenAgents"
+          key={label}
+          href={href}
           target="_blank"
           rel="noreferrer"
+          style={S.footerLink}
         >
-          GitHub
+          {label}
         </a>
-        <a href="docs/specs/2026-04-26-agent-forge.md">Spec</a>
-        <a href="docs/prizes/">Prizes</a>
-      </div>
-    </footer>
+      ))}
+    </div>
   );
 }
+
+function SectionHead({
+  num,
+  title,
+  right,
+}: { num: string; title: string; right?: string }) {
+  return (
+    <div style={S.sectionHead}>
+      <div style={S.sectionEyebrow}>{num}</div>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginTop: 12,
+        }}
+      >
+        <h2 style={S.sectionH2}>{title}</h2>
+        {right ? (
+          <div style={{ fontSize: 11, color: A.mute, letterSpacing: '0.18em' }}>
+            {right}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+const S = {
+  shell: {
+    background: A.bg,
+    color: A.ink,
+    fontFamily: '"JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace',
+    fontSize: 13,
+    lineHeight: 1.55,
+    width: '100%',
+    minHeight: '100vh',
+    letterSpacing: '0.01em',
+  },
+  statusBar: {
+    display: 'grid',
+    gridTemplateColumns: '1.6fr repeat(5, auto) 1fr',
+    gap: 22,
+    padding: '8px 24px',
+    borderBottom: `1px solid ${A.rule}`,
+    background: 'linear-gradient(180deg, #07101a, #04080d)',
+    fontSize: 10,
+    color: A.mute,
+    textTransform: 'uppercase',
+    letterSpacing: '0.18em',
+    alignItems: 'center',
+  },
+  nav: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr auto',
+    alignItems: 'center',
+    padding: '20px 28px',
+    borderBottom: `1px solid ${A.rule}`,
+    gap: 32,
+  },
+  logo: { fontSize: 18, fontWeight: 700, letterSpacing: '0.02em' },
+  navLinks: {
+    display: 'flex',
+    gap: 24,
+    fontSize: 12,
+    color: A.mute,
+    textTransform: 'uppercase',
+    letterSpacing: '0.14em',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  navLink: { color: A.mute, textDecoration: 'none', cursor: 'pointer' },
+  applyBtn: {
+    background: A.acid,
+    color: A.bg,
+    padding: '10px 18px',
+    fontWeight: 700,
+    fontSize: 12,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase',
+    border: 0,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  hero: {
+    borderBottom: `1px solid ${A.rule}`,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  missionHeader: {
+    padding: '0 28px',
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    alignItems: 'center',
+    fontSize: 10,
+    color: A.mute,
+    letterSpacing: '0.24em',
+    textTransform: 'uppercase',
+  },
+  heroStage: {
+    position: 'relative',
+    marginTop: 32,
+    minHeight: 460,
+  },
+  fighterFrame: {
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: 'rotate(-6deg)',
+    filter: 'drop-shadow(0 30px 60px rgba(0,0,0,0.7))',
+  },
+  heroBanner: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    textAlign: 'center',
+    pointerEvents: 'none',
+    fontSize: 11,
+    color: A.amber,
+    letterSpacing: '0.5em',
+  },
+  heroLower: {
+    position: 'relative',
+    padding: '0 28px',
+    marginTop: -40,
+    display: 'grid',
+    gridTemplateColumns: '1.3fr 1fr',
+    gap: 60,
+    alignItems: 'end',
+  },
+  eyebrow: {
+    fontSize: 11,
+    color: A.mute,
+    letterSpacing: '0.2em',
+    marginBottom: 28,
+  },
+  heroH1: {
+    fontSize: 'clamp(56px, 8vw, 112px)',
+    lineHeight: 0.92,
+    margin: 0,
+    fontWeight: 700,
+    letterSpacing: '-0.03em',
+    textShadow: `0 0 40px ${A.bg}`,
+  },
+  heroH1Italic: {
+    color: A.hud,
+    fontStyle: 'italic',
+    fontFamily: '"Instrument Serif", Georgia, serif',
+    fontWeight: 400,
+    letterSpacing: '-0.01em',
+  },
+  amberBtn: {
+    background: A.amber,
+    color: '#000',
+    padding: '18px 28px',
+    fontFamily: 'inherit',
+    fontWeight: 700,
+    fontSize: 13,
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase',
+    border: 0,
+    cursor: 'pointer',
+    boxShadow: `0 0 0 1px #000, 0 0 0 2px ${A.amber}`,
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+  cyanBtn: {
+    background: 'transparent',
+    color: A.hud,
+    padding: '18px 24px',
+    fontFamily: 'inherit',
+    fontWeight: 600,
+    fontSize: 13,
+    letterSpacing: '0.22em',
+    textTransform: 'uppercase',
+    border: `1px solid ${A.hud}`,
+    cursor: 'pointer',
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+  specCard: {
+    border: `1px solid ${A.rule}`,
+    background: 'rgba(8,16,24,0.78)',
+    backdropFilter: 'blur(6px)',
+    padding: 20,
+    fontSize: 11,
+    position: 'relative',
+  },
+  specStats: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTop: `1px solid ${A.rule}`,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: 10,
+  },
+  specForgeRow: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTop: `1px solid ${A.rule}`,
+  },
+  heroLede: {
+    maxWidth: 540,
+    fontSize: 15,
+    lineHeight: 1.55,
+    color: A.body,
+    marginTop: 32,
+  },
+  pilotForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    marginTop: 32,
+    maxWidth: 360,
+  },
+  pilotLabel: { fontSize: 11, color: A.mute, letterSpacing: '0.2em' },
+  pilotInput: {
+    background: A.bgAlt,
+    color: A.ink,
+    border: `1px solid ${A.rule}`,
+    padding: '12px 14px',
+    fontFamily: 'inherit',
+    fontSize: 14,
+    letterSpacing: '0.04em',
+  },
+  countStrip: {
+    marginTop: 56,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    borderTop: `1px solid ${A.rule}`,
+    borderBottom: `1px solid ${A.rule}`,
+  },
+  countNum: { fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em' },
+  countLabel: {
+    fontSize: 10,
+    color: A.mute,
+    letterSpacing: '0.2em',
+    marginTop: 4,
+  },
+  section: { borderBottom: `1px solid ${A.rule}` },
+  sectionHead: {
+    padding: '40px 28px 24px',
+    borderBottom: `1px solid ${A.rule}`,
+  },
+  sectionEyebrow: { fontSize: 11, color: A.mute, letterSpacing: '0.2em' },
+  sectionH2: {
+    fontSize: 'clamp(32px, 4vw, 44px)',
+    margin: 0,
+    fontWeight: 700,
+    letterSpacing: '-0.02em',
+  },
+  gridThree: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' },
+  tableHead: {
+    display: 'grid',
+    gridTemplateColumns: '90px 90px 1fr 2fr 80px',
+    fontSize: 11,
+    color: A.mute,
+    letterSpacing: '0.2em',
+    padding: '14px 0',
+    borderBottom: `1px solid ${A.rule}`,
+  },
+  tableRow: {
+    display: 'grid',
+    gridTemplateColumns: '90px 90px 1fr 2fr 80px',
+    padding: '16px 0',
+    fontSize: 13,
+    alignItems: 'center',
+  },
+  bigNumber: {
+    fontSize: 'clamp(80px, 11vw, 160px)',
+    fontWeight: 700,
+    letterSpacing: '-0.04em',
+    lineHeight: 0.9,
+    marginTop: 18,
+  },
+  diffHead: {
+    display: 'grid',
+    gridTemplateColumns: '180px 1fr 1fr',
+    gap: 24,
+    padding: '14px 0',
+    borderBottom: `1px solid ${A.rule}`,
+    fontSize: 11,
+    color: A.mute,
+    letterSpacing: '0.2em',
+  },
+  diffRow: {
+    display: 'grid',
+    gridTemplateColumns: '180px 1fr 1fr',
+    gap: 24,
+    padding: '16px 0',
+    fontSize: 13,
+    alignItems: 'center',
+  },
+  tierLabel: {
+    padding: '12px 28px',
+    fontSize: 11,
+    color: A.mute,
+    letterSpacing: '0.2em',
+    borderBottom: `1px dashed ${A.rule}`,
+  },
+  errorBanner: {
+    marginTop: 16,
+    padding: '12px 16px',
+    border: `1px solid ${A.hot}`,
+    color: A.hot,
+    fontSize: 12,
+    letterSpacing: '0.12em',
+  },
+  statusBanner: {
+    marginTop: 16,
+    padding: '12px 16px',
+    border: `1px solid ${A.acid}`,
+    color: A.acid,
+    fontSize: 12,
+    letterSpacing: '0.12em',
+  },
+  cta: { background: A.acid, color: A.bg },
+  ctaH2: {
+    fontSize: 'clamp(80px, 12vw, 180px)',
+    fontWeight: 700,
+    lineHeight: 0.9,
+    letterSpacing: '-0.04em',
+    margin: 0,
+  },
+  ctaBtn: {
+    background: A.bg,
+    color: A.acid,
+    padding: '20px 32px',
+    fontFamily: 'inherit',
+    fontWeight: 700,
+    fontSize: 15,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase',
+    border: 0,
+    cursor: 'pointer',
+  },
+  footer: {
+    background: A.bg,
+    color: A.ink,
+    borderTop: `1px solid ${A.bg}`,
+    padding: '14px 28px',
+    fontSize: 11,
+    letterSpacing: '0.18em',
+    display: 'grid',
+    gridTemplateColumns: '1fr auto auto auto auto',
+    gap: 24,
+  },
+  footerLink: { color: A.ink, textDecoration: 'none' },
+} satisfies Record<string, CSSProperties>;

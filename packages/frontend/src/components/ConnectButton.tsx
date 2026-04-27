@@ -1,3 +1,4 @@
+import { shortAddress } from '@gradiusweb3/shared/browser';
 import { useState } from 'react';
 import {
   useAccount,
@@ -6,10 +7,6 @@ import {
   useDisconnect,
   useSwitchChain,
 } from 'wagmi';
-
-function shortAddress(address: string) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
 
 export function ConnectButton() {
   const { address, isConnected, connector } = useAccount();

@@ -1,4 +1,4 @@
-import type { AgentProfile } from '@openagents/shared/browser';
+import type { AgentProfile } from '@gradiusweb3/shared/browser';
 import { useMemo } from 'react';
 import { buildRadarAxisPoints, buildRadarPolygonPoints } from '../game/radar';
 

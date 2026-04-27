@@ -1,4 +1,4 @@
-import type { PlayLog } from '@openagents/shared/browser';
+import type { PlayLog } from '@gradiusweb3/shared/browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { drawBigText, pixelText } from '../game/font';
 import { PAL, RH, RW } from '../game/palette';
