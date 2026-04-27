@@ -356,6 +356,10 @@ export interface Runtime {
   particleCounter: number;
   warningT: number;
   flashT: number;
+  /// Frames remaining in the player death animation. While > 0, the player
+  /// sprite is hidden, particles play out, and `finished` stays false so the
+  /// canvas keeps rendering the explosion. Reaches 0 → finished = true.
+  dyingT: number;
   finished: boolean;
   finishReason: 'time' | 'hp' | null;
   showTutorialPrompt: boolean;
@@ -392,6 +396,7 @@ export function createRuntime(chain: ChainId = 'ARB'): Runtime {
     particleCounter: 0,
     warningT: 0,
     flashT: 0,
+    dyingT: 0,
     finished: false,
     finishReason: null,
     showTutorialPrompt: true,
@@ -787,9 +792,11 @@ export function step(rt: Runtime, input: InputState) {
         rt.player.hp -= 1;
         rt.events.push({ kind: 'hit', t: elapsedMs(rt), damage: 1 });
         rt.player.iframes = 60;
-        rt.flashT = 12;
-        spawnBurst(rt, rt.player.x, rt.player.y, '#ff5252', 14);
+        rt.flashT = 18;
+        spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ff5252', 28);
+        spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ffe66d', 12);
         pushToast(rt, `HULL ${rt.player.hp}`, PAL.warn);
+        playSfx('hit');
         break;
       }
     }
@@ -805,13 +812,15 @@ export function step(rt: Runtime, input: InputState) {
         ) {
           rt.player.hp -= e.type === 'moai' ? 2 : 1;
           rt.player.iframes = 60;
-          rt.flashT = 12;
+          rt.flashT = 18;
           rt.events.push({
             kind: 'hit',
             t: elapsedMs(rt),
             damage: e.type === 'moai' ? 2 : 1,
           });
-          spawnBurst(rt, rt.player.x, rt.player.y, '#ff5252', 16);
+          spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ff5252', 30);
+          spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ffe66d', 14);
+          playSfx('hit');
           break;
         }
       }
@@ -840,10 +849,23 @@ export function step(rt: Runtime, input: InputState) {
   rt.archetypePeek = computeArchetype(rt);
 
   // End conditions
-  if (!rt.finished) {
-    if (rt.player.hp <= 0) {
+  if (rt.dyingT > 0) {
+    rt.dyingT -= 1;
+    if (rt.dyingT <= 0) {
       rt.finished = true;
       rt.finishReason = 'hp';
+    }
+  } else if (!rt.finished) {
+    if (rt.player.hp <= 0) {
+      // Big death explosion: 3 staggered bursts so the canvas keeps rendering
+      // ~45 frames of debris before BirthArcade switches to the debrief overlay.
+      const cx = rt.player.x + 8;
+      const cy = rt.player.y + 5;
+      spawnBurst(rt, cx, cy, '#ffd166', 60);
+      spawnBurst(rt, cx, cy, '#ff5252', 50);
+      spawnBurst(rt, cx, cy, '#ffffff', 28);
+      rt.flashT = 30;
+      rt.dyingT = 45;
       playSfx('death');
     } else if (rt.t >= GAME_DURATION_FRAMES) {
       rt.finished = true;
@@ -1046,8 +1068,8 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
     ctx.fillRect((b.x | 0) - 1, (b.y | 0) - 1, 3, 3);
   }
 
-  // Player
-  if (!(rt.player.iframes > 0 && (rt.t >> 1) % 2 === 0)) {
+  // Player — hidden during the death animation so the explosion reads cleanly.
+  if (rt.dyingT <= 0 && !(rt.player.iframes > 0 && (rt.t >> 1) % 2 === 0)) {
     drawSprite(ctx, VIC_VIPER, VIC_KEY, rt.player.x | 0, rt.player.y | 0);
   }
 
