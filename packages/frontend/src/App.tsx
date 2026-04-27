@@ -18,6 +18,7 @@ import { BirthArcade } from './components/BirthArcade';
 import { ConnectButton } from './components/ConnectButton';
 import { Fighter } from './components/Fighter';
 import { Callout, HUDCorners, Reticle } from './components/HUD';
+import { MusicPlayer } from './components/MusicPlayer';
 import type { Archetype } from './game/runtime';
 
 const A = {
@@ -278,6 +279,7 @@ export function App() {
       ) : null}
       <CTASection onPlay={jumpToArcade} />
       <FooterBar />
+      <MusicPlayer />
     </div>
   );
 }
