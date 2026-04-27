@@ -7,6 +7,7 @@ import type {
 import { CHAINS, type ChainId } from './chains';
 import { drawBigText, pixelText } from './font';
 import { PAL, PLAY_H, RH, RW } from './palette';
+import { playSfx } from './sfx';
 import {
   GRUNT,
   GRUNT_KEY,
@@ -644,6 +645,7 @@ export function step(rt: Runtime, input: InputState) {
         }
         if (e.hp <= 0) {
           if (e.type === 'moai') {
+            playSfx('moai');
             const constraint = MOAI_CONSTRAINT[e.moaiId];
             rt.score += 1500;
             rt.events.push({
@@ -666,6 +668,7 @@ export function step(rt: Runtime, input: InputState) {
               life: 1.4,
             });
           } else {
+            playSfx('kill');
             // Commit the capability into the Agent policy; score scales by cost.
             rt.votes[e.archetype] += 1;
             rt.score += e.scoreOnKill;
@@ -837,12 +840,15 @@ export function step(rt: Runtime, input: InputState) {
   rt.archetypePeek = computeArchetype(rt);
 
   // End conditions
-  if (rt.player.hp <= 0) {
-    rt.finished = true;
-    rt.finishReason = 'hp';
-  } else if (rt.t >= GAME_DURATION_FRAMES) {
-    rt.finished = true;
-    rt.finishReason = 'time';
+  if (!rt.finished) {
+    if (rt.player.hp <= 0) {
+      rt.finished = true;
+      rt.finishReason = 'hp';
+      playSfx('death');
+    } else if (rt.t >= GAME_DURATION_FRAMES) {
+      rt.finished = true;
+      rt.finishReason = 'time';
+    }
   }
 }
 
