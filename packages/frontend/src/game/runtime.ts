@@ -827,6 +827,39 @@ export function step(rt: Runtime, input: InputState) {
     }
   }
 
+  // Terrain — instant kill regardless of iframes (Gradius rule: rock = death).
+  if (rt.dyingT <= 0 && rt.player.hp > 0) {
+    const px = rt.player.x;
+    const py = rt.player.y;
+    const pw = 16;
+    const ph = 10;
+    const overlaps = (seg: { x: number; y: number; w: number; h: number }) => {
+      const sx = seg.x - rt.terrain.scroll;
+      return (
+        sx + seg.w > px && sx < px + pw && seg.y + seg.h > py && seg.y < py + ph
+      );
+    };
+    let crashed = false;
+    for (const seg of rt.terrain.floor) {
+      if (overlaps(seg)) {
+        crashed = true;
+        break;
+      }
+    }
+    if (!crashed) {
+      for (const seg of rt.terrain.ceiling) {
+        if (overlaps(seg)) {
+          crashed = true;
+          break;
+        }
+      }
+    }
+    if (crashed) {
+      rt.player.hp = 0;
+      rt.events.push({ kind: 'hit', t: elapsedMs(rt), damage: 99 });
+    }
+  }
+
   // Particles + score pops + toasts
   const particleStep = 1 / 60;
   rt.particles = rt.particles.filter((p) => {

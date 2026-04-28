@@ -415,7 +415,7 @@ function Nav({ onPlay }: { onPlay: () => void }) {
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <ConnectButton />
         <button type="button" style={S.applyBtn} onClick={onPlay}>
-          ▶ Insert Coin
+          ▶ Play Free
         </button>
       </div>
     </div>
@@ -608,7 +608,9 @@ function Hero({
             flip
           />
 
-          <div style={S.heroBanner}>── INSERT COIN · 60 SECONDS ──</div>
+          <div style={S.heroBanner}>
+            ── PRESS START · 60 SECONDS · FREE PLAY ──
+          </div>
         </div>
 
         <div className="lp-hero-lower" style={S.heroLower}>

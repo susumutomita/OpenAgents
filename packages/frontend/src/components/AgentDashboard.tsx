@@ -240,7 +240,7 @@ function OnChainProofPanel({
                 disabled={swapping || proof.swap.status === 'pending'}
                 style={swapButtonStyle(swapping ?? false)}
               >
-                {swapping ? 'SWAPPING…' : 'INSERT COIN FOR FIRST TRADE'}
+                {swapping ? 'SWAPPING…' : 'EXECUTE FIRST TRADE'}
               </button>
             )
           }

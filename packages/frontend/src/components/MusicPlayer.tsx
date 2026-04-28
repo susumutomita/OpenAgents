@@ -1661,7 +1661,7 @@ function MusicPlayerImpl() {
             color: playing ? AMBER : '#5a6c80',
           }}
         >
-          {playing ? '● PLAYING · LAUNCH (SNES)' : '○ INSERT COIN'}
+          {playing ? '● PLAYING · LAUNCH (SNES)' : '○ PRESS PLAY'}
         </div>
         <div
           style={{
