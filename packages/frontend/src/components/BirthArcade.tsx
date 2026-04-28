@@ -21,7 +21,9 @@ import {
   simulateTrades,
   step as stepRuntime,
 } from '../game/runtime';
+import { prewarmSfx } from '../game/sfx';
 import { VIC_KEY, VIC_VIPER, drawSprite } from '../game/sprites';
+import { GAME_START_EVENT } from './MusicPlayer';
 
 interface BirthArcadeProps {
   disabled?: boolean;
@@ -71,11 +73,15 @@ export function BirthArcade({
     runtimeRef.current = createRuntime();
     setArchetype(null);
     setTrades([]);
+    prewarmSfx();
+    window.dispatchEvent(new Event(GAME_START_EVENT));
     setPhase('play');
   }, [disabled]);
 
   const replay = useCallback(() => {
     runtimeRef.current = createRuntime();
+    prewarmSfx();
+    window.dispatchEvent(new Event(GAME_START_EVENT));
     setPhase('play');
   }, []);
 

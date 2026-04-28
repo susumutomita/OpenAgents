@@ -21,6 +21,26 @@ A 60-second retro arcade shooter that doubles as the world's fastest onboarding 
 
 ---
 
+## Quick verification for prize judges
+
+30-second checklist for sponsor prize reviewers (0G / ENS / Uniswap):
+
+| What to check | Where |
+|---------------|-------|
+| Live demo (free play, ~60 s) | https://gr-dius-web3-frontend.vercel.app/ |
+| 0G iNFT contract source (ERC-721 + tokenURI, deterministic `keccak(msg.sender, playLogHash)`) | [`contracts/src/AgentForgeINFT.sol`](./contracts/src/AgentForgeINFT.sol) |
+| 0G Galileo deploy script + chain config (id 16601) | [`contracts/script/Deploy.s.sol`](./contracts/script/Deploy.s.sol), [`contracts/foundry.toml`](./contracts/foundry.toml) |
+| 0G Storage put call site (browser bundle stub today, real SDK is the next PR) | [`packages/frontend/src/web3/zerog-storage.ts`](./packages/frontend/src/web3/zerog-storage.ts) |
+| ENS Sepolia subname registration via real NameWrapper + Resolver | [`packages/frontend/src/web3/ens-register.ts`](./packages/frontend/src/web3/ens-register.ts) |
+| Uniswap v3 Sepolia first-trade execution (WETH→USDC, native-ETH wrap) | [`packages/frontend/src/web3/uniswap-swap.ts`](./packages/frontend/src/web3/uniswap-swap.ts) |
+| Forge orchestrator (`Promise.allSettled` so one failure never blocks the dashboard) | [`packages/frontend/src/web3/forge-onchain.ts`](./packages/frontend/src/web3/forge-onchain.ts) |
+| Uniswap DX feedback (required for Uniswap prize submission) | [`FEEDBACK.md`](./FEEDBACK.md) |
+| Spec + scoring rubric + Plan log | [`docs/specs/2026-04-27-web3-wiring.md`](./docs/specs/2026-04-27-web3-wiring.md), [`Plan.md`](./Plan.md) |
+
+The contract + module surface is intentionally tight (~7 frontend files, 1 contract) so judges can read the entire on-chain pipeline in under 5 minutes.
+
+---
+
 ## Why this exists
 
 > Designing AI agents today is **complex, opaque, trial-and-error**. Builders click through abstract settings, hope for the best, and ship agents nobody can explain. The UX hasn't evolved past 2010-era admin panels.

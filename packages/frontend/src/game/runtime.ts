@@ -792,9 +792,12 @@ export function step(rt: Runtime, input: InputState) {
         rt.player.hp -= 1;
         rt.events.push({ kind: 'hit', t: elapsedMs(rt), damage: 1 });
         rt.player.iframes = 60;
-        rt.flashT = 18;
-        spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ff5252', 28);
-        spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ffe66d', 12);
+        rt.flashT = 25;
+        const cx = rt.player.x + 8;
+        const cy = rt.player.y + 5;
+        spawnBurst(rt, cx, cy, '#ff5252', 50);
+        spawnBurst(rt, cx, cy, '#ffe66d', 25);
+        spawnBurst(rt, cx, cy, '#ffffff', 12);
         pushToast(rt, `HULL ${rt.player.hp}`, PAL.warn);
         playSfx('hit');
         break;
@@ -812,14 +815,18 @@ export function step(rt: Runtime, input: InputState) {
         ) {
           rt.player.hp -= e.type === 'moai' ? 2 : 1;
           rt.player.iframes = 60;
-          rt.flashT = 18;
+          rt.flashT = 25;
           rt.events.push({
             kind: 'hit',
             t: elapsedMs(rt),
             damage: e.type === 'moai' ? 2 : 1,
           });
-          spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ff5252', 30);
-          spawnBurst(rt, rt.player.x + 8, rt.player.y + 5, '#ffe66d', 14);
+          const cx = rt.player.x + 8;
+          const cy = rt.player.y + 5;
+          spawnBurst(rt, cx, cy, '#ff5252', 50);
+          spawnBurst(rt, cx, cy, '#ffe66d', 25);
+          spawnBurst(rt, cx, cy, '#ffffff', 12);
+          pushToast(rt, `HULL ${rt.player.hp}`, PAL.warn);
           playSfx('hit');
           break;
         }
