@@ -80,28 +80,41 @@ export const CAPABILITY_ORDER: Capability[] = [
   'missile',
 ];
 
+/// Player-facing capability names. Each enemy color = one of the agent
+/// safety / strategy defaults that real DeFi operators forget to configure.
+/// Keep these short and intuitive; longer descriptions live in the dashboard.
 export const CAPABILITY_LABEL: Record<Capability, string> = {
-  shield: 'SHIELD',
-  speed: 'SPEED',
-  option: 'OPTION',
-  laser: 'LASER',
-  missile: 'MISSILE',
+  shield: 'SECURITY',
+  speed: 'FAST EXEC',
+  option: 'LEVERAGE',
+  laser: 'PRECISION',
+  missile: 'ALPHA',
 };
 
 export const CAPABILITY_HUD_LABEL: Record<Capability, string> = {
-  shield: 'SHLD',
-  speed: 'SPD',
-  option: 'OPT',
-  laser: 'LSR',
-  missile: 'MSL',
+  shield: 'SEC',
+  speed: 'EXEC',
+  option: 'LEV',
+  laser: 'PREC',
+  missile: 'ALPHA',
 };
 
 export const CAPABILITY_DESC: Record<Capability, string> = {
-  shield: 'CIRCUIT BREAKER',
-  speed: 'L2 FAST EXEC',
-  option: 'AXL PEER NODE',
-  laser: '0G REASONING',
-  missile: 'UNISWAP ROUTER',
+  shield: 'approval limits / multi-sig / allowlist',
+  speed: 'L2 / private mempool / quick rebalance',
+  option: 'margin tier / max position / hedge',
+  laser: 'slippage cap / concentrated entry',
+  missile: 'external signal / oracle / AI advisor',
+};
+
+/// What real-world risk hits an agent that ships without this default armed.
+/// Surfaced in the dashboard "SAFETY CHECKLIST" panel and Moai damage toasts.
+export const CAPABILITY_RISK: Record<Capability, string> = {
+  shield: 'phishing / unlimited approve = full wallet drain',
+  speed: 'tx times out, price moved, partial fills',
+  option: 'liquidation on the wrong tier / left return on the table',
+  laser: 'sandwich attack, sloppy fills cost 1-3% per swap',
+  missile: 'trade on stale oracle, no edge',
 };
 
 export const CAPABILITY_COLOR: Record<Capability, string> = {
@@ -126,27 +139,27 @@ const MOAI_CONSTRAINT: Record<
 > = {
   aegis: {
     label: 'GAS WALL',
-    detail: 'caps position size',
+    detail: 'no SECURITY → 1 tx eats a month of profit',
     capability: 'shield',
   },
   razor: {
     label: 'MEV RAZOR',
-    detail: 'punishes sloppy swaps',
+    detail: 'no PRECISION → sandwiched for ~3% per swap',
     capability: 'laser',
   },
   oracle: {
     label: 'ORACLE DRIFT',
-    detail: 'forces market checks',
+    detail: 'no ALPHA → trade on stale price',
     capability: 'missile',
   },
   comet: {
     label: 'LATENCY COMET',
-    detail: 'demands fast execution',
+    detail: 'no FAST EXEC → tx times out, price moves',
     capability: 'speed',
   },
   hive: {
-    label: 'PEER DRIFT',
-    detail: 'tests AXL coordination',
+    label: 'REGIME SHIFT',
+    detail: 'no LEVERAGE management → market shifts and you stay frozen',
     capability: 'option',
   },
 };
