@@ -151,38 +151,8 @@ const FORGE_FLOW: Array<[string, string, string, string, ForgeStatus]> = [
   ],
 ];
 
-const SPONSOR_PAYLOAD = [
-  {
-    code: '0G',
-    prize: '$15,000',
-    weight: 60,
-    role: 'iNFT body + storage + sealed compute',
-    body: 'ERC-7857-style iNFT for the agent body. play_log + memory in 0G Storage. Profile derivation runs as sealed inference on 0G Compute.',
-    where: 'contracts/src/AgentForgeINFT.sol · packages/shared/src/forge.ts',
-    color: A.acid,
-  },
-  {
-    code: 'ENS',
-    prize: '$5,000',
-    weight: 20,
-    role: 'On-chain agent identity (Creative track)',
-    body: 'Auto-issued subname `{handle}.gradiusweb3.eth` with verifiable text records. The credential is portable, the iNFT carries it.',
-    where: 'packages/frontend/src/web3/ens-register.ts',
-    color: A.hud,
-  },
-  {
-    code: 'UNI',
-    prize: '$5,000',
-    weight: 20,
-    role: "Agent's real on-chain action",
-    body: 'Sepolia swap via Uniswap API closes the loop: play → forge → trade. FEEDBACK.md documents DX friction.',
-    where: 'FEEDBACK.md',
-    color: A.hot,
-  },
-];
-
 const SPONSOR_TIERS: Array<[string, string[]]> = [
-  ['PRIMARY', ['0G $15K', 'ENS $5K', 'UNISWAP $5K']],
+  ['PRIMARY', ['0G', 'ENS', 'UNISWAP']],
   ['INFRA', ['VITE', 'REACT_19', 'VIEM', 'WAGMI', 'FOUNDRY', 'BUN', 'BIOME']],
   ['CHAINS', ['SEPOLIA', 'BASE_SEPOLIA', 'OP_SEPOLIA', 'ARB_SEPOLIA']],
 ];
@@ -326,7 +296,6 @@ export function App() {
       />
       <ArchetypesSection />
       <ForgeProtocolSection />
-      <SponsorPayloadSection />
       <DifferentiationSection />
       <SponsorsSection />
       <ArcadeSection
@@ -424,9 +393,6 @@ function Nav({ onPlay }: { onPlay: () => void }) {
         </a>
         <a href="#forge" style={S.navLink}>
           [02] Forge
-        </a>
-        <a href="#sponsors" style={S.navLink}>
-          [03] Payload
         </a>
         <a href="#arcade" style={S.navLink}>
           [04] Arcade
@@ -979,111 +945,6 @@ function ForgeProtocolSection() {
   );
 }
 
-function SponsorPayloadSection() {
-  return (
-    <section id="sponsors" style={S.section}>
-      <div
-        className="lp-sponsor-split"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr' }}
-      >
-        <div
-          style={{ padding: '60px 28px', borderRight: `1px solid ${A.rule}` }}
-        >
-          <div style={S.sectionEyebrow}>§ 03 / SPONSOR_PAYLOAD</div>
-          <div style={S.bigNumber}>$25K</div>
-          <div style={{ fontSize: 14, color: A.mute, marginTop: 8 }}>
-            target — three load-bearing integrations, no cosmetic name-drops.
-          </div>
-          <p
-            style={{
-              fontSize: 14,
-              color: A.body,
-              maxWidth: 460,
-              marginTop: 36,
-              lineHeight: 1.55,
-            }}
-          >
-            Each prize fits the product narrative.{' '}
-            <span style={{ color: A.ink }}>0G</span> for the agent body and
-            memory. <span style={{ color: A.ink }}>ENS</span> for a portable
-            identity. <span style={{ color: A.ink }}>Uniswap</span> as the
-            agent's first real on-chain action. Gensyn AXL and KeeperHub were
-            dropped to keep depth over breadth.
-          </p>
-        </div>
-        <div style={{ padding: '60px 28px' }}>
-          <div style={S.sectionEyebrow}>BREAKDOWN · BY_PRIZE_WEIGHT</div>
-          <div style={{ marginTop: 24 }}>
-            {SPONSOR_PAYLOAD.map((s) => (
-              <div key={s.code} style={{ marginBottom: 26 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 13,
-                    marginBottom: 6,
-                  }}
-                >
-                  <span>
-                    <strong style={{ color: A.ink }}>{s.code}</strong>{' '}
-                    <span style={{ color: A.mute }}>· {s.role}</span>
-                  </span>
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      fontVariantNumeric: 'tabular-nums',
-                      color: s.color,
-                    }}
-                  >
-                    {s.prize}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    height: 6,
-                    background: '#181815',
-                    position: 'relative',
-                    marginBottom: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: `${s.weight}%`,
-                      background: s.color,
-                    }}
-                  />
-                </div>
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: A.body,
-                    margin: 0,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {s.body}
-                </p>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: A.mute,
-                    marginTop: 6,
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  → {s.where}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function DifferentiationSection() {
   return (
     <section style={S.section}>
@@ -1576,13 +1437,6 @@ const S = {
     padding: '16px 0',
     fontSize: 13,
     alignItems: 'center',
-  },
-  bigNumber: {
-    fontSize: 'clamp(80px, 11vw, 160px)',
-    fontWeight: 700,
-    letterSpacing: '-0.04em',
-    lineHeight: 0.9,
-    marginTop: 18,
   },
   diffHead: {
     display: 'grid',
