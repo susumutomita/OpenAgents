@@ -374,7 +374,7 @@ export interface Runtime {
 export function createRuntime(chain: ChainId = 'ARB'): Runtime {
   return {
     t: 0,
-    player: { x: 60, y: PLAY_H / 2, hp: 4, iframes: 90 },
+    player: { x: 60, y: PLAY_H / 2, hp: 4, iframes: 24 },
     bullets: [],
     enemies: [],
     enemyBullets: [],
@@ -827,6 +827,39 @@ export function step(rt: Runtime, input: InputState) {
     }
   }
 
+  // Terrain — instant kill regardless of iframes (Gradius rule: rock = death).
+  if (rt.dyingT <= 0 && rt.player.hp > 0) {
+    const px = rt.player.x;
+    const py = rt.player.y;
+    const pw = 16;
+    const ph = 10;
+    const overlaps = (seg: { x: number; y: number; w: number; h: number }) => {
+      const sx = seg.x - rt.terrain.scroll;
+      return (
+        sx + seg.w > px && sx < px + pw && seg.y + seg.h > py && seg.y < py + ph
+      );
+    };
+    let crashed = false;
+    for (const seg of rt.terrain.floor) {
+      if (overlaps(seg)) {
+        crashed = true;
+        break;
+      }
+    }
+    if (!crashed) {
+      for (const seg of rt.terrain.ceiling) {
+        if (overlaps(seg)) {
+          crashed = true;
+          break;
+        }
+      }
+    }
+    if (crashed) {
+      rt.player.hp = 0;
+      rt.events.push({ kind: 'hit', t: elapsedMs(rt), damage: 99 });
+    }
+  }
+
   // Particles + score pops + toasts
   const particleStep = 1 / 60;
   rt.particles = rt.particles.filter((p) => {
@@ -1069,8 +1102,12 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
   }
 
   // Player — hidden during the death animation so the explosion reads cleanly.
-  if (rt.dyingT <= 0 && !(rt.player.iframes > 0 && (rt.t >> 1) % 2 === 0)) {
+  // During spawn / damage iframes the ship stays visible at half opacity so
+  // the player never loses track of it (previous behaviour blinked invisible).
+  if (rt.dyingT <= 0) {
+    if (rt.player.iframes > 0) ctx.globalAlpha = 0.55;
     drawSprite(ctx, VIC_VIPER, VIC_KEY, rt.player.x | 0, rt.player.y | 0);
+    ctx.globalAlpha = 1;
   }
 
   // Score pops

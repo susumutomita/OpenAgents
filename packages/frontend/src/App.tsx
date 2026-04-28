@@ -103,7 +103,7 @@ const FORGE_FLOW: Array<[string, string, string, string, ForgeStatus]> = [
   [
     'STEP_01',
     'T-60s',
-    'Insert coin · move · auto-fire',
+    'Press start · move · auto-fire',
     'WASD or arrow keys. Color you destroy most decides your archetype.',
     'live',
   ],
@@ -415,7 +415,7 @@ function Nav({ onPlay }: { onPlay: () => void }) {
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <ConnectButton />
         <button type="button" style={S.applyBtn} onClick={onPlay}>
-          ▶ Insert Coin
+          ▶ Play Free
         </button>
       </div>
     </div>
@@ -608,7 +608,9 @@ function Hero({
             flip
           />
 
-          <div style={S.heroBanner}>── INSERT COIN · 60 SECONDS ──</div>
+          <div style={S.heroBanner}>
+            ── PRESS START · 60 SECONDS · FREE PLAY ──
+          </div>
         </div>
 
         <div className="lp-hero-lower" style={S.heroLower}>
@@ -1158,7 +1160,7 @@ const ArcadeSection = forwardRef<HTMLDivElement, ArcadeSectionProps>(
       <section id="arcade" ref={ref} style={S.section}>
         <SectionHead
           num="§ 06 / ARCADE"
-          title="Insert coin · 60 seconds · forge an agent."
+          title="PRESS START · 60 SECONDS · FORGE AN AGENT."
           right="LIVE_DEMO"
         />
         <div style={{ padding: '24px 28px 40px' }}>
@@ -1211,12 +1213,12 @@ function CTASection({ onPlay }: { onPlay: () => void }) {
     <section style={S.cta}>
       <div style={{ padding: '80px 28px 60px', position: 'relative' }}>
         <div style={{ fontSize: 11, letterSpacing: '0.2em', marginBottom: 16 }}>
-          ▸ FINAL_CALL · NO_MENU · NO_CONFIG · 60s
+          ▸ FINAL_CALL · NO_MENU · NO_CONFIG · 60s · 0.00 ETH
         </div>
         <h2 style={S.ctaH2}>
-          INSERT_
+          PRESS_
           <br />
-          COIN.
+          START.
         </h2>
         <div
           style={{
