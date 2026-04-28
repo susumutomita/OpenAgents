@@ -7,6 +7,9 @@ import {
   ARCHETYPE_DESC,
   ARCHETYPE_LABEL,
   type Archetype,
+  CAPABILITY_COLOR,
+  CAPABILITY_DESC,
+  CAPABILITY_LABEL,
   getAllocation,
 } from '../game/runtime';
 import type { OnChainProof, OnChainStep, TxStatus } from '../web3/types';
@@ -151,6 +154,8 @@ export function AgentDashboard({
         </div>
       </section>
 
+      <PlayToAgentPanel birth={birth} archetype={archetype} />
+
       {proof ? (
         <OnChainProofPanel
           proof={proof}
@@ -173,6 +178,139 @@ export function AgentDashboard({
           ))}
         </ol>
       </section>
+    </section>
+  );
+}
+
+type CapabilityKey = 'shield' | 'speed' | 'option' | 'laser' | 'missile';
+
+const CAP_KEYS: CapabilityKey[] = [
+  'shield',
+  'speed',
+  'option',
+  'laser',
+  'missile',
+];
+
+function tallyCommits(birth: StoredAgentBirth): Record<CapabilityKey, number> {
+  const tally: Record<CapabilityKey, number> = {
+    shield: 0,
+    speed: 0,
+    option: 0,
+    laser: 0,
+    missile: 0,
+  };
+  for (const event of birth.playLog.events) {
+    if (event.kind !== 'commit') continue;
+    if (event.capsule === 'double') continue;
+    tally[event.capsule as CapabilityKey] += 1;
+  }
+  return tally;
+}
+
+function PlayToAgentPanel({
+  birth,
+  archetype,
+}: {
+  birth: StoredAgentBirth;
+  archetype: Archetype;
+}) {
+  const tally = tallyCommits(birth);
+  const total = Object.values(tally).reduce((a, b) => a + b, 0) || 1;
+  const winner = CAP_KEYS.reduce<CapabilityKey>(
+    (best, key) => (tally[key] > tally[best] ? key : best),
+    'shield'
+  );
+  return (
+    <section
+      className="panel"
+      style={{ borderColor: A.rule, background: A.panel }}
+    >
+      <div className="panel-header">
+        <span className="eyebrow" style={{ color: A.amber }}>
+          PLAY → AGENT
+        </span>
+        <h2 style={{ color: A.ink }}>What your 60 seconds committed</h2>
+        <p style={{ color: A.mute, fontSize: 12 }}>
+          Each enemy you destroyed committed a capability into the Agent
+          loadout. The dominant capability decided the archetype below.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+        {CAP_KEYS.map((key) => {
+          const count = tally[key];
+          const pct = (count / total) * 100;
+          const isWinner = key === winner && count > 0;
+          return (
+            <div
+              key={key}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '90px 1fr 80px 220px',
+                gap: 12,
+                alignItems: 'center',
+                fontSize: 12,
+                fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                color: isWinner ? A.ink : A.mute,
+              }}
+            >
+              <span style={{ color: CAPABILITY_COLOR[key], fontWeight: 700 }}>
+                {CAPABILITY_LABEL[key]}
+              </span>
+              <div
+                style={{
+                  height: 6,
+                  background: '#0d1620',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: `${Math.max(pct, count > 0 ? 6 : 0)}%`,
+                    background: CAPABILITY_COLOR[key],
+                    opacity: isWinner ? 1 : 0.55,
+                  }}
+                />
+              </div>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                ×{count} ({Math.round(pct)}%)
+              </span>
+              <span style={{ color: A.mute, fontSize: 11 }}>
+                {CAPABILITY_DESC[key]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div
+        style={{
+          marginTop: 16,
+          padding: '12px 14px',
+          border: `1px solid ${A.rule}`,
+          fontSize: 12,
+          fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+          color: A.ink,
+          lineHeight: 1.6,
+        }}
+      >
+        <span style={{ color: A.mute }}>DOMINANT_CAPABILITY → </span>
+        <span
+          style={{
+            color: CAPABILITY_COLOR[winner],
+            fontWeight: 700,
+          }}
+        >
+          {CAPABILITY_LABEL[winner]}
+        </span>
+        <span style={{ color: A.mute }}> ⇒ ARCHETYPE → </span>
+        <span style={{ color: ARCHETYPE_COLOR[archetype], fontWeight: 700 }}>
+          {ARCHETYPE_LABEL[archetype]}
+        </span>
+        <span style={{ color: A.mute }}> ⇒ POLICY: </span>
+        <span style={{ color: A.ink }}>{ARCHETYPE_DESC[archetype]}</span>
+      </div>
     </section>
   );
 }
