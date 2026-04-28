@@ -223,6 +223,19 @@ export function App() {
   const { address: ownerAddress } = useAccount();
   const { data: walletClient } = useWalletClient();
 
+  // Refs that always carry the freshest values so the async handleComplete
+  // (called via BirthArcade's onCompleteRef) never sees a stale capture.
+  // Without this the wallet client can be undefined at game-end even when
+  // the user is plainly connected (closure captured at game-start render).
+  const walletClientRef = useRef(walletClient);
+  const ownerAddressRef = useRef(ownerAddress);
+  useEffect(() => {
+    walletClientRef.current = walletClient;
+  }, [walletClient]);
+  useEffect(() => {
+    ownerAddressRef.current = ownerAddress;
+  }, [ownerAddress]);
+
   async function handleComplete(playLog: PlayLog, derivedArchetype: Archetype) {
     window.dispatchEvent(new Event(GAME_END_EVENT));
     try {
@@ -230,20 +243,18 @@ export function App() {
       setError('');
       const pilot = playerName.trim() || 'Pilot';
       const draft = await createAgentBirthDraft(pilot, playLog);
+      const wc = walletClientRef.current;
+      const owner = ownerAddressRef.current;
       const stored: StoredAgentBirth = {
         ...draft,
-        agent: ownerAddress
-          ? { ...draft.agent, walletAddress: ownerAddress }
-          : draft.agent,
+        agent: owner ? { ...draft.agent, walletAddress: owner } : draft.agent,
         createdAt: new Date().toISOString(),
       };
       setArchetype(derivedArchetype);
       setBirth(stored);
 
-      // Fire-and-await on-chain pipeline. allSettled inside means this
-      // resolves with success/failed per step rather than throwing.
-      if (walletClient) {
-        const result = await runOnChainForge(walletClient, stored);
+      if (wc) {
+        const result = await runOnChainForge(wc, stored);
         setProof(result);
       } else {
         setProof({
@@ -1181,6 +1192,17 @@ const ArcadeSection = forwardRef<HTMLDivElement, ArcadeSectionProps>(
           right="LIVE_DEMO"
         />
         <div style={{ padding: '24px 28px 40px' }}>
+          <p style={S.arcadeIntro}>
+            ENEMIES = AGENT MODULES. Each kill commits a capability into the
+            loadout. The color you destroy most decides the archetype. Survive
+            the Moai (production constraints). At T-00 the play log freezes →
+            <strong style={{ color: A.acid }}>
+              {' '}
+              the section below shows exactly what was forged from your reflexes
+            </strong>
+            , and (with a wallet connected) writes the iNFT, ENS subname, and
+            first Uniswap trade on testnet.
+          </p>
           <BirthArcade disabled={disabled} onComplete={onComplete} />
           {error ? <div style={S.errorBanner}>! {error}</div> : null}
           {submitting ? (
@@ -1586,6 +1608,15 @@ const S = {
     color: A.mute,
     letterSpacing: '0.2em',
     borderBottom: `1px dashed ${A.rule}`,
+  },
+  arcadeIntro: {
+    margin: '0 0 20px',
+    padding: '14px 16px',
+    border: `1px dashed ${A.rule}`,
+    color: A.body,
+    fontSize: 13,
+    lineHeight: 1.6,
+    maxWidth: 760,
   },
   errorBanner: {
     marginTop: 16,
