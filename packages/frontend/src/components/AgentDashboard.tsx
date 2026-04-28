@@ -177,6 +177,8 @@ export function AgentDashboard({
   );
 }
 
+const WALLET_NOT_CONNECTED = 'wallet not connected';
+
 function OnChainProofPanel({
   proof,
   onFirstSwap,
@@ -186,6 +188,11 @@ function OnChainProofPanel({
   onFirstSwap?: () => void;
   swapping?: boolean;
 }) {
+  const walletMissing =
+    proof.mint.error === WALLET_NOT_CONNECTED &&
+    proof.storage.error === WALLET_NOT_CONNECTED &&
+    proof.ens.error === WALLET_NOT_CONNECTED;
+
   return (
     <section
       className="panel"
@@ -200,6 +207,26 @@ function OnChainProofPanel({
           0G Galileo iNFT · 0G Storage CID · Sepolia ENS · Sepolia Uniswap.
         </p>
       </div>
+
+      {walletMissing ? (
+        <div
+          style={{
+            marginTop: 16,
+            padding: '14px 16px',
+            border: `1px dashed ${A.amber}`,
+            color: A.amber,
+            fontSize: 12,
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            lineHeight: 1.6,
+          }}
+        >
+          ⚡ Connect a wallet (▶ CONNECT WALLET in the nav) to mint the iNFT,
+          register the ENS subname, and execute the first Uniswap trade. Forge
+          itself is free; on-chain proof requires a Sepolia wallet with testnet
+          ETH.
+        </div>
+      ) : null}
 
       <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
         <ProofRow

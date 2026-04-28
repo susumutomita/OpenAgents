@@ -12,7 +12,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useAccount, useWalletClient } from 'wagmi';
+import { useAccount, useChainId, useWalletClient } from 'wagmi';
 import { AgentDashboard } from './components/AgentDashboard';
 import { BirthArcade } from './components/BirthArcade';
 import { ConnectButton } from './components/ConnectButton';
@@ -359,21 +359,38 @@ function StatusCell({ k, v, color }: { k: string; v: string; color?: string }) {
   );
 }
 
+const CHAIN_LABELS: Record<number, string> = {
+  11155111: 'SEPOLIA',
+  84532: 'BASE_SEPOLIA',
+  11155420: 'OP_SEPOLIA',
+  421614: 'ARB_SEPOLIA',
+  16601: '0G_GALILEO',
+};
+
 function StatusBar() {
   const [clock, setClock] = useState(() => formatUtc(new Date()));
+  const { isConnected } = useAccount();
+  const chainId = useChainId();
   useEffect(() => {
     const id = setInterval(() => setClock(formatUtc(new Date())), 1000);
     return () => clearInterval(id);
   }, []);
+  const chainLabel = isConnected
+    ? (CHAIN_LABELS[chainId] ?? `CHAIN_${chainId}`)
+    : 'OFFLINE';
   return (
     <div className="lp-status-bar" style={S.statusBar}>
       <span>
-        <span style={{ color: A.green }}>●</span> NETWORK_ONLINE ·
-        GR@DIUS_FORGE_v1.0
+        <span style={{ color: isConnected ? A.green : A.mute }}>●</span>{' '}
+        {isConnected ? 'WALLET_ONLINE' : 'WALLET_OFFLINE'} · GR@DIUS_FORGE_v1.0
       </span>
       <StatusCell k="ICAO" v="GNSH" />
       <StatusCell k="HDG" v="027°" color={A.hud} />
-      <StatusCell k="CHAIN" v="SEPOLIA" color={A.hud} />
+      <StatusCell
+        k="CHAIN"
+        v={chainLabel}
+        color={isConnected ? A.hud : A.mute}
+      />
       <StatusCell k="UTC" v={clock} color={A.green} />
       <StatusCell k="OP" v="ETHGLOBAL_TOKYO" />
       <span style={{ color: A.amber, justifySelf: 'end' }}>

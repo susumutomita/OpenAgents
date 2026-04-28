@@ -147,3 +147,18 @@ export function playSfx(kind: SfxKind): void {
 export function setSfxMuted(value: boolean): void {
   muted = value;
 }
+
+/// Force AudioContext creation + resume from a user-gesture handler so the
+/// first in-game SFX (kill / hit) is not swallowed by autoplay policy. Plays
+/// a one-sample silent tick to confirm the graph is live.
+export function prewarmSfx(): void {
+  const handle = ensureCtx();
+  if (!handle) return;
+  const t = handle.ctx.currentTime;
+  const osc = handle.ctx.createOscillator();
+  const g = handle.ctx.createGain();
+  g.gain.value = 0.0001;
+  osc.connect(g).connect(handle.out);
+  osc.start(t);
+  osc.stop(t + 0.01);
+}

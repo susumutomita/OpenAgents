@@ -24,6 +24,7 @@ const VIS_BARS = [
 ] as const;
 
 export const GAME_END_EVENT = 'gradius:gameEnd';
+export const GAME_START_EVENT = 'gradius:gameStart';
 
 function createChiptuneEngine(): ChiptuneEngine {
   let ctx: AudioContext | null = null;
@@ -1584,8 +1585,18 @@ function MusicPlayerImpl() {
         setPlaying(false);
       }
     };
+    const onGameStart = () => {
+      if (!engineRef.current?.isRunning()) {
+        engineRef.current?.start();
+        setPlaying(true);
+      }
+    };
     window.addEventListener(GAME_END_EVENT, onGameEnd);
-    return () => window.removeEventListener(GAME_END_EVENT, onGameEnd);
+    window.addEventListener(GAME_START_EVENT, onGameStart);
+    return () => {
+      window.removeEventListener(GAME_END_EVENT, onGameEnd);
+      window.removeEventListener(GAME_START_EVENT, onGameStart);
+    };
   }, []);
 
   const toggle = () => {
