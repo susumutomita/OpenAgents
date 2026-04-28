@@ -103,7 +103,7 @@ const FORGE_FLOW: Array<[string, string, string, string, ForgeStatus]> = [
   [
     'STEP_01',
     'T-60s',
-    'Insert coin · move · auto-fire',
+    'Press start · move · auto-fire',
     'WASD or arrow keys. Color you destroy most decides your archetype.',
     'live',
   ],
@@ -1160,7 +1160,7 @@ const ArcadeSection = forwardRef<HTMLDivElement, ArcadeSectionProps>(
       <section id="arcade" ref={ref} style={S.section}>
         <SectionHead
           num="§ 06 / ARCADE"
-          title="Insert coin · 60 seconds · forge an agent."
+          title="PRESS START · 60 SECONDS · FORGE AN AGENT."
           right="LIVE_DEMO"
         />
         <div style={{ padding: '24px 28px 40px' }}>
@@ -1213,12 +1213,12 @@ function CTASection({ onPlay }: { onPlay: () => void }) {
     <section style={S.cta}>
       <div style={{ padding: '80px 28px 60px', position: 'relative' }}>
         <div style={{ fontSize: 11, letterSpacing: '0.2em', marginBottom: 16 }}>
-          ▸ FINAL_CALL · NO_MENU · NO_CONFIG · 60s
+          ▸ FINAL_CALL · NO_MENU · NO_CONFIG · 60s · 0.00 ETH
         </div>
         <h2 style={S.ctaH2}>
-          INSERT_
+          PRESS_
           <br />
-          COIN.
+          START.
         </h2>
         <div
           style={{

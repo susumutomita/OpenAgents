@@ -374,7 +374,7 @@ export interface Runtime {
 export function createRuntime(chain: ChainId = 'ARB'): Runtime {
   return {
     t: 0,
-    player: { x: 60, y: PLAY_H / 2, hp: 4, iframes: 90 },
+    player: { x: 60, y: PLAY_H / 2, hp: 4, iframes: 24 },
     bullets: [],
     enemies: [],
     enemyBullets: [],
@@ -1102,8 +1102,12 @@ export function render(ctx: CanvasRenderingContext2D, rt: Runtime) {
   }
 
   // Player — hidden during the death animation so the explosion reads cleanly.
-  if (rt.dyingT <= 0 && !(rt.player.iframes > 0 && (rt.t >> 1) % 2 === 0)) {
+  // During spawn / damage iframes the ship stays visible at half opacity so
+  // the player never loses track of it (previous behaviour blinked invisible).
+  if (rt.dyingT <= 0) {
+    if (rt.player.iframes > 0) ctx.globalAlpha = 0.55;
     drawSprite(ctx, VIC_VIPER, VIC_KEY, rt.player.x | 0, rt.player.y | 0);
+    ctx.globalAlpha = 1;
   }
 
   // Score pops
