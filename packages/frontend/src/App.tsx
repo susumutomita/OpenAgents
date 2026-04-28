@@ -42,50 +42,50 @@ const A = {
 const ARCHETYPES = [
   {
     id: '01',
-    name: 'SPEED',
-    short: 'Fast but shallow',
-    body: 'Real-time reactions, snap decisions. Cheap latency. Loses depth on long-running judgments.',
-    tag: 'PINK',
+    name: 'FAST EXEC',
+    short: 'L2 / private mempool / quick rebalance',
+    body: "Without it your agent's tx times out, the price has moved, and you eat partial fills. Most agents default to mainnet and pay for it.",
+    tag: 'EXEC',
     color: '#ff8db3',
   },
   {
     id: '02',
-    name: 'LASER',
-    short: 'Accurate but slow',
-    body: 'High-precision reasoning. Pinpoint actions but burns budget per call.',
-    tag: 'RED',
+    name: 'PRECISION',
+    short: 'slippage cap / concentrated entry',
+    body: 'Without it every swap is a free lunch for sandwich bots. Default agents leave slippage at infinity — 1-3% bleed per trade.',
+    tag: 'EDGE',
     color: '#ff5252',
   },
   {
     id: '03',
-    name: 'OPTION',
-    short: 'Parallel but uncertain',
-    body: 'Spawns peer agents. Massive parallelism, coordination overhead, drift risk.',
-    tag: 'GREEN',
+    name: 'LEVERAGE',
+    short: 'margin tier / max position / hedge',
+    body: 'Default 0 = leave returns on the table. Default ∞ = liquidated on the wrong tier. The forgotten parameter that decides win or wipe.',
+    tag: 'TIER',
     color: '#40f070',
   },
   {
     id: '04',
-    name: 'SHIELD',
-    short: 'Safe but conservative',
-    body: 'Guardrails, retries, circuit breakers. Trades upside for safe operation.',
-    tag: 'CYAN',
+    name: 'SECURITY',
+    short: 'approval limit / multi-sig / allowlist',
+    body: 'Without it one phishing approve drains the wallet. Most agents ship with unlimited token approvals and a single hot key.',
+    tag: 'GUARD',
     color: '#7bdff2',
   },
   {
     id: '05',
-    name: 'MISSILE',
-    short: 'Powerful but external-reliant',
-    body: 'Tool use, third-party APIs, retrieval. Capability ceiling jumps; failure surface widens.',
-    tag: 'PURPLE',
+    name: 'ALPHA',
+    short: 'external signal / oracle / AI advisor',
+    body: 'Without it the agent trades blind on whatever the last block said. Stale-oracle losses are the most embarrassing kind.',
+    tag: 'SIGNAL',
     color: '#c084ff',
   },
   {
     id: '06',
-    name: 'MOAI',
-    short: 'The constraints you cannot shoot',
-    body: 'Gas, latency, security policy, API limits, hallucination risk. Dodge or die.',
-    tag: 'BOSS',
+    name: 'BOSSES',
+    short: 'real losses you eat if you skipped a default',
+    body: 'GAS WALL, MEV RAZOR, ORACLE DRIFT, LATENCY COMET, REGIME SHIFT. Each one punishes a missing module — ship without arming, and the boss collects.',
+    tag: 'RISK',
     color: A.hot,
   },
 ] as const;
@@ -389,7 +389,7 @@ function Nav({ onPlay }: { onPlay: () => void }) {
       </div>
       <div className="lp-nav-links" style={S.navLinks}>
         <a href="#tradeoffs" style={S.navLink}>
-          [01] Tradeoffs
+          [01] Defaults
         </a>
         <a href="#forge" style={S.navLink}>
           [02] Forge
@@ -610,18 +610,21 @@ function Hero({
         <div className="lp-hero-lower" style={S.heroLower}>
           <div>
             <h1 style={S.heroH1}>
-              KILL THE
+              ARM THE
               <br />
-              TRADEOFFS.
+              DEFAULTS
               <br />
-              <span style={S.heroH1Italic}>fly your agent.</span>
+              <span style={S.heroH1Italic}>nobody reads.</span>
             </h1>
             <p style={S.heroLede}>
-              Gr<span style={{ color: A.hud }}>@</span>dius is a 60-second
-              arcade dogfight that doubles as the world's fastest onboarding for
-              autonomous on-chain agents. Stick. Throttle. Trigger.{' '}
+              Most autonomous agents ship without slippage caps, approval
+              limits, oracle checks, leverage tiers, or fast-exec rails — the
+              defaults the docs warn about and nobody bothers to set.{' '}
               <span style={{ color: A.ink }}>
-                The agent that survives is the agent you ship.
+                Gr<span style={{ color: A.hud }}>@</span>dius is a 60-second
+                shooter that arms each one by hand. Survive the bosses (real
+                losses you'd otherwise eat) and you walk away knowing why each
+                default exists.
               </span>
             </p>
             <div
@@ -661,7 +664,7 @@ function Hero({
             <div style={S.countStrip}>
               {[
                 ['60s', 'BUILD_WINDOW'],
-                ['5+1', 'ARCHETYPES'],
+                ['5+1', 'DEFAULTS'],
                 ['$25K', 'PRIZE_TARGET'],
                 ['1', 'iNFT_PER_RUN'],
               ].map(([n, l], i) => (
@@ -816,8 +819,8 @@ function ArchetypesSection() {
   return (
     <section id="tradeoffs" style={S.section}>
       <SectionHead
-        num="§ 01 / TRADEOFFS"
-        title="Six enemies. One agent."
+        num="§ 01 / DEFAULTS"
+        title="Six modules. Six agent footguns."
         right="EACH_SHOT_IS_A_VOTE"
       />
       <div className="lp-grid-three" style={S.gridThree}>
@@ -848,9 +851,9 @@ function ArchetypesSection() {
                 style={{
                   fontSize: 10,
                   padding: '3px 8px',
-                  background: t.tag === 'BOSS' ? A.hot : 'transparent',
-                  color: t.tag === 'BOSS' ? A.bg : t.color,
-                  border: t.tag === 'BOSS' ? 'none' : `1px solid ${t.color}`,
+                  background: t.tag === 'RISK' ? A.hot : 'transparent',
+                  color: t.tag === 'RISK' ? A.bg : t.color,
+                  border: t.tag === 'RISK' ? 'none' : `1px solid ${t.color}`,
                   letterSpacing: '0.18em',
                   fontWeight: 700,
                 }}

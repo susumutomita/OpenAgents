@@ -10,6 +10,7 @@ import {
   CAPABILITY_COLOR,
   CAPABILITY_DESC,
   CAPABILITY_LABEL,
+  CAPABILITY_RISK,
   getAllocation,
 } from '../game/runtime';
 import type { OnChainProof, OnChainStep, TxStatus } from '../web3/types';
@@ -155,6 +156,7 @@ export function AgentDashboard({
       </section>
 
       <PlayToAgentPanel birth={birth} archetype={archetype} />
+      <SafetyChecklistPanel birth={birth} />
 
       {proof ? (
         <OnChainProofPanel
@@ -311,6 +313,98 @@ function PlayToAgentPanel({
         <span style={{ color: A.mute }}> ⇒ POLICY: </span>
         <span style={{ color: A.ink }}>{ARCHETYPE_DESC[archetype]}</span>
       </div>
+    </section>
+  );
+}
+
+function SafetyChecklistPanel({ birth }: { birth: StoredAgentBirth }) {
+  const tally = tallyCommits(birth);
+  const armed = CAP_KEYS.filter((k) => tally[k] > 0);
+  const forgot = CAP_KEYS.filter((k) => tally[k] === 0);
+  const safetyScore = armed.length;
+  return (
+    <section
+      className="panel"
+      style={{ borderColor: A.rule, background: A.panel }}
+    >
+      <div className="panel-header">
+        <span className="eyebrow" style={{ color: A.amber }}>
+          SAFETY CHECKLIST
+        </span>
+        <h2 style={{ color: A.ink }}>{safetyScore} / 5 defaults armed</h2>
+        <p style={{ color: A.mute, fontSize: 12 }}>
+          Most autonomous agents ship with these missing. Each module you armed
+          via gameplay is one less footgun in production.
+        </p>
+      </div>
+
+      {armed.length > 0 ? (
+        <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+          {armed.map((key) => (
+            <div
+              key={key}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '24px 130px 1fr',
+                gap: 12,
+                alignItems: 'start',
+                fontSize: 12,
+                fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                lineHeight: 1.5,
+              }}
+            >
+              <span style={{ color: A.green, fontWeight: 700 }}>✓</span>
+              <span style={{ color: CAPABILITY_COLOR[key], fontWeight: 700 }}>
+                {CAPABILITY_LABEL[key]}
+              </span>
+              <span style={{ color: A.ink }}>{CAPABILITY_DESC[key]}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {forgot.length > 0 ? (
+        <div
+          style={{
+            marginTop: 18,
+            paddingTop: 14,
+            borderTop: `1px dashed ${A.rule}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: A.hot,
+              letterSpacing: '0.2em',
+              marginBottom: 10,
+            }}
+          >
+            ⚠ FORGOT — Real agents commonly skip these. Risks if missing:
+          </div>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {forgot.map((key) => (
+              <div
+                key={key}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '24px 130px 1fr',
+                  gap: 12,
+                  alignItems: 'start',
+                  fontSize: 12,
+                  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                  lineHeight: 1.5,
+                }}
+              >
+                <span style={{ color: A.hot, fontWeight: 700 }}>✗</span>
+                <span style={{ color: A.mute, fontWeight: 700 }}>
+                  {CAPABILITY_LABEL[key]}
+                </span>
+                <span style={{ color: A.mute }}>{CAPABILITY_RISK[key]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
