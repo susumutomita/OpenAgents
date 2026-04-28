@@ -1,4 +1,4 @@
-type SfxKind = 'kill' | 'moai' | 'death' | 'shoot';
+type SfxKind = 'kill' | 'moai' | 'death' | 'shoot' | 'hit';
 
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
@@ -90,6 +90,36 @@ function playShoot(c: AudioContext, out: GainNode, t: number) {
   osc.stop(t + 0.06);
 }
 
+function playHit(c: AudioContext, out: GainNode, t: number) {
+  const noiseLen = (c.sampleRate * 0.1) | 0 || 1;
+  const buf = c.createBuffer(1, noiseLen, c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < noiseLen; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen) ** 1.2;
+  }
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const bp = c.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 600;
+  bp.Q.value = 1.2;
+  const g = c.createGain();
+  g.gain.value = 0.55;
+  src.connect(bp).connect(g).connect(out);
+  src.start(t);
+
+  const osc = c.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(320, t);
+  osc.frequency.exponentialRampToValueAtTime(140, t + 0.12);
+  const og = c.createGain();
+  og.gain.setValueAtTime(0.4, t);
+  og.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+  osc.connect(og).connect(out);
+  osc.start(t);
+  osc.stop(t + 0.16);
+}
+
 export function playSfx(kind: SfxKind): void {
   if (muted) return;
   const handle = ensureCtx();
@@ -107,6 +137,9 @@ export function playSfx(kind: SfxKind): void {
       break;
     case 'shoot':
       playShoot(handle.ctx, handle.out, t);
+      break;
+    case 'hit':
+      playHit(handle.ctx, handle.out, t);
       break;
   }
 }
