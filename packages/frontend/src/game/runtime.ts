@@ -1,8 +1,10 @@
-import type {
-  Capsule,
-  MoaiId,
-  PlayEvent,
-  PlayLog,
+import {
+  CAPABILITY_TO_MISALIGNMENT,
+  type Capsule,
+  type MisalignmentKind,
+  type MoaiId,
+  type PlayEvent,
+  type PlayLog,
 } from '@gradiusweb3/shared/browser';
 import { CHAINS, type ChainId } from './chains';
 import { drawBigText, pixelText } from './font';
@@ -287,6 +289,18 @@ interface Enemy {
   fireCool: number;
   spawnAt: number;
   isTutorial: boolean;
+  /// capability に紐付いた misalignment 種別 (speed のみ undefined)。
+  misalignment?: MisalignmentKind;
+}
+
+/// 敵を撃破した瞬間に React 側へ misalignment カードを toast 表示するため、
+/// Runtime の mutable state にイベントを積む。React は次フレームの render 中に
+/// 末尾から 1 件読んで表示し終えたら shift する。
+export interface MisalignmentToastEvent {
+  id: number;
+  kind: MisalignmentKind;
+  capability: Capability;
+  spawnAt: number;
 }
 
 interface MoaiBoss {
@@ -354,6 +368,11 @@ export interface Runtime {
   scorePops: ScorePop[];
   particles: Particle[];
   toasts: Toast[];
+  /// React 側 MisalignmentToast 用の pending キュー。
+  /// shift 済 → 表示済の意味。runtime 内では消化しない。
+  misalignmentToasts: MisalignmentToastEvent[];
+  /// MisalignmentToastEvent.id を採番するカウンタ。
+  misalignmentCounter: number;
   stars: Star[];
   terrain: Terrain;
   events: PlayEvent[];
@@ -394,6 +413,8 @@ export function createRuntime(chain: ChainId = 'ARB'): Runtime {
     scorePops: [],
     particles: [],
     toasts: [],
+    misalignmentToasts: [],
+    misalignmentCounter: 0,
     stars: makeStars(),
     terrain: makeTerrain(),
     events: [],
@@ -506,6 +527,7 @@ function spawnTutorialEnemy(rt: Runtime) {
     fireCool: 60,
     spawnAt: rt.t,
     isTutorial: true,
+    misalignment: CAPABILITY_TO_MISALIGNMENT[spec.capability],
   });
   rt.enemyCounter += 1;
   rt.tutorialStep += 1;
@@ -541,6 +563,7 @@ function spawnEnemyWave(rt: Runtime) {
       fireCool: 60 + i * 18,
       spawnAt: rt.t,
       isTutorial: false,
+      misalignment: CAPABILITY_TO_MISALIGNMENT[capabilityChoice.capability],
     });
   }
   rt.enemyCounter += 1;
@@ -698,7 +721,17 @@ export function step(rt: Runtime, input: InputState) {
               tradeoffLabel: `${CAPABILITY_LABEL[e.capability]} / ${
                 CAPABILITY_DESC[e.capability]
               }`,
+              misalignment: e.misalignment,
             });
+            if (e.misalignment) {
+              rt.misalignmentCounter += 1;
+              rt.misalignmentToasts.push({
+                id: rt.misalignmentCounter,
+                kind: e.misalignment,
+                capability: e.capability,
+                spawnAt: rt.t,
+              });
+            }
             spawnBurst(rt, e.x + 4, e.y + 4, e.flashColor, 14);
             rt.scorePops.push({
               x: e.x + 4,
@@ -721,6 +754,7 @@ export function step(rt: Runtime, input: InputState) {
           t: elapsedMs(rt),
           enemyId: e.id,
           tradeoffLabel: `SKIP ${CAPABILITY_LABEL[e.capability]}`,
+          misalignment: e.misalignment,
         });
       }
       return false;

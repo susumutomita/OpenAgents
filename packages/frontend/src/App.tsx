@@ -9,6 +9,7 @@ import {
   type Ref,
   forwardRef,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -19,10 +20,28 @@ import { ConnectButton } from './components/ConnectButton';
 import { Fighter } from './components/Fighter';
 import { Callout, HUDCorners, Reticle } from './components/HUD';
 import { GAME_END_EVENT, MusicPlayer } from './components/MusicPlayer';
+import { SafetyAttestationPanel } from './components/SafetyAttestationPanel';
 import type { Archetype } from './game/runtime';
 import { runOnChainForge } from './web3/forge-onchain';
+import {
+  type SafetyAttestationResult,
+  runSafetyAttestation,
+} from './web3/safety-attestation';
 import { type OnChainProof, idleProof } from './web3/types';
 import { executeFirstSwap } from './web3/uniswap-swap';
+
+const DEFAULT_PARENT_NAME =
+  (import.meta.env.VITE_ENS_PARENT as string | undefined) ?? 'gradiusweb3.eth';
+
+function generatePilotHandle(): string {
+  // 4 桁 hex で 65,536 通り。前回 PR の tokenId griefing と同型の
+  // 「衝突空間が狭く parent owner が上書きできる」経路を避けるため、
+  // 仕様書 21 行目の "pilot{2 桁}" (100 通り) からここで拡張している。
+  const buf = new Uint8Array(2);
+  globalThis.crypto.getRandomValues(buf);
+  const n = ((buf[0] ?? 0) << 8) | (buf[1] ?? 0);
+  return `pilot${n.toString(16).padStart(4, '0')}`;
+}
 
 const A = {
   bg: '#05080c',
@@ -189,6 +208,11 @@ export function App() {
   const [error, setError] = useState('');
   const [proof, setProof] = useState<OnChainProof>(idleProof);
   const [swapping, setSwapping] = useState(false);
+  const [safetyResult, setSafetyResult] =
+    useState<SafetyAttestationResult | null>(null);
+  // セッション内ランダム handle: マウント時に 1 回だけ生成。
+  const handle = useMemo(generatePilotHandle, []);
+  const parentName = DEFAULT_PARENT_NAME;
   const arcadeRef = useRef<HTMLDivElement | null>(null);
   const { address: ownerAddress } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -234,6 +258,18 @@ export function App() {
           ens: { status: 'failed', error: 'wallet not connected' },
         });
       }
+
+      // C 層: Agent 安全アテステーション。score 計算と attestation 生成は
+      // ウォレット未接続でも完走する。0G put / ENS write が個別 failed のみ。
+      const safety = await runSafetyAttestation({
+        walletClient: wc,
+        playLog,
+        handle,
+        ownerAddress: owner,
+        sessionId: playLog.sessionId,
+        parentName,
+      });
+      setSafetyResult(safety);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error ? caughtError.message : 'Forge failed.'
@@ -301,6 +337,8 @@ export function App() {
       <ArcadeSection
         ref={arcadeRef}
         disabled={submitting}
+        handle={handle}
+        parentName={parentName}
         onComplete={handleComplete}
         error={error}
         submitting={submitting}
@@ -310,6 +348,7 @@ export function App() {
           birth={birth}
           archetype={archetype}
           proof={proof}
+          safetyResult={safetyResult}
           onFirstSwap={handleFirstSwap}
           swapping={swapping}
         />
@@ -1038,6 +1077,8 @@ function SponsorsSection() {
 
 type ArcadeSectionProps = {
   disabled: boolean;
+  handle: string;
+  parentName: string;
   onComplete: (log: PlayLog, a: Archetype) => void;
   error: string;
   submitting: boolean;
@@ -1045,7 +1086,7 @@ type ArcadeSectionProps = {
 
 const ArcadeSection = forwardRef<HTMLDivElement, ArcadeSectionProps>(
   function ArcadeSection(
-    { disabled, onComplete, error, submitting },
+    { disabled, handle, parentName, onComplete, error, submitting },
     ref: Ref<HTMLDivElement>
   ) {
     return (
@@ -1067,7 +1108,12 @@ const ArcadeSection = forwardRef<HTMLDivElement, ArcadeSectionProps>(
             , and (with a wallet connected) writes the iNFT, ENS subname, and
             first Uniswap trade on testnet.
           </p>
-          <BirthArcade disabled={disabled} onComplete={onComplete} />
+          <BirthArcade
+            disabled={disabled}
+            handle={handle}
+            parentName={parentName}
+            onComplete={onComplete}
+          />
           {error ? <div style={S.errorBanner}>! {error}</div> : null}
           {submitting ? (
             <div style={S.statusBanner}>▸ FORGING_AGENT_FROM_PLAY_LOG…</div>
@@ -1082,12 +1128,14 @@ function DashboardSection({
   birth,
   archetype,
   proof,
+  safetyResult,
   onFirstSwap,
   swapping,
 }: {
   birth: StoredAgentBirth;
   archetype: Archetype;
   proof: OnChainProof;
+  safetyResult: SafetyAttestationResult | null;
   onFirstSwap: () => void;
   swapping: boolean;
 }) {
@@ -1106,6 +1154,15 @@ function DashboardSection({
           onFirstSwap={onFirstSwap}
           swapping={swapping}
         />
+        {safetyResult ? (
+          <div style={{ marginTop: 24 }}>
+            <SafetyAttestationPanel
+              attestation={safetyResult.attestation}
+              storageProof={safetyResult.storageProof}
+              ensProof={safetyResult.ensProof}
+            />
+          </div>
+        ) : null}
       </div>
     </section>
   );

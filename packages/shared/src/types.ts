@@ -6,14 +6,66 @@ export type MoaiId = (typeof MOAI_IDS)[number];
 
 export type Tool = (typeof TOOLS)[number];
 
+export type MisalignmentKind =
+  | 'sycophancy'
+  | 'reward_hacking'
+  | 'prompt_injection'
+  | 'goal_misgen';
+
+export interface MisalignmentCard {
+  kind: MisalignmentKind;
+  label: string;
+  description: string;
+  example: string;
+  glyph: '◉' | '◇' | '▲' | '☓';
+  color: string;
+}
+
+export interface MisalignmentEncounter {
+  kind: MisalignmentKind;
+  enemyId: string;
+  tAtMs: number;
+  hit: boolean;
+}
+
 export type PlayEvent =
-  | { kind: 'shoot'; t: number; enemyId: string; tradeoffLabel: string }
-  | { kind: 'pass'; t: number; enemyId: string; tradeoffLabel: string }
+  | {
+      kind: 'shoot';
+      t: number;
+      enemyId: string;
+      tradeoffLabel: string;
+      misalignment?: MisalignmentKind;
+    }
+  | {
+      kind: 'pass';
+      t: number;
+      enemyId: string;
+      tradeoffLabel: string;
+      misalignment?: MisalignmentKind;
+    }
   | { kind: 'capsule'; t: number; capsule: Capsule }
   | { kind: 'barAdvance'; t: number; position: number }
   | { kind: 'commit'; t: number; position: number; capsule: Capsule }
   | { kind: 'moaiKill'; t: number; moaiId: MoaiId }
   | { kind: 'hit'; t: number; damage: number };
+
+export interface SafetyScoreBreakdown {
+  clearTimeBonus: number;
+  missPenalty: number;
+  total: number;
+}
+
+export interface AgentSafetyAttestation {
+  sessionId: string;
+  handle: string;
+  ensName: string;
+  walletAddress: string;
+  score: number;
+  breakdown: SafetyScoreBreakdown;
+  encounters: MisalignmentEncounter[];
+  issuedAt: string;
+  schemaVersion: 1;
+}
 
 export interface PlayLog {
   sessionId: string;

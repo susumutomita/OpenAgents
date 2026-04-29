@@ -191,11 +191,28 @@
 #### 進捗ログ
 
 - 2026-04-29 — `/feature` フロー Phase 0-2 完了、Prize 採点 (0G Storage 3 + ENS 3) → 仕様書承認 → ブランチ feat/safety-tutorial にスタック。
+- 2026-04-29 — Phase 3 Issue 5 件作成 (#24 PM / #25 Designer / #26 Developer / #27 QA / #28 User)。
+- 2026-04-29 — Phase 4 5 役割並列実装完了。Developer は shared/safety.ts (24 pass) + frontend/safety-attestation.ts (10 pass) + UI コンポーネント 2 件、PM/Designer/QA/User は派生ドキュメントを成果物として出力。
+- 2026-04-29 — Phase 5 統合: QA critical #1 (subname handle 衝突 griefing、前回 tokenId 級) を反映。pilot 2 桁 → 4 桁 hex に拡張、ENS Registry の owner() で pre-flight チェック、Sepolia chain assertion を追加。Persona Z 指摘の URI スキーム (`{scheme}://{value}`) を putAttestation に固定。全ゲート green。
+
+#### 振り返り
+
+- **問題**: Developer agent が自動生成した handle が `pilot{2 桁}` (100 通り) で、parent owner 権限の NameWrapper.setSubnodeRecord と組み合わさると「他者保有の subname を上書き」する経路が成立した。前回 tokenId griefing と全く同じ構造 (衝突空間が狭く、parent owner の write 権限が広い)。
+- **根本原因**: 仕様書 21 行目に「pilot{2 桁ランダム}」と書いた時点で、衝突空間の狭さが griefing につながると気付けなかった。Phase 2 の Security 考慮セクションに「Griefing — handle pre-claim」を入れていたものの、対策行が「衝突時 retry」止まりで「衝突空間そのものを広げる」「pre-flight ownerOf を見る」まで踏み込めていなかった。並列 QA agent がこれを critical top-1 で拾えたのが救い。
+- **予防策**: ハンドル / トークン ID / nonce を含む全ての user-controllable identifier について、仕様書テンプレに「衝突空間サイズ」「parent / owner の write 権限」「pre-flight 確認手段」の 3 列を必須化する。Phase 2 仕様書テンプレ (前回追加した Security セクション) を更にこの 3 列で拡張する。
+- **学び**: 並列 QA agent の独立視点が 2 PR 連続で critical を拾えた (前回 tokenId、今回 subname handle)。これは固定運用にする価値がある。Developer agent 単独では最小実装に倒れて衝突空間を考慮しない傾向。
 
 #### Known Follow-ups
 
-- 0G Storage SDK 実統合 (現状 SHA-256 stub のまま)。
+- 0G Storage SDK 実統合 (現状 SHA-256 stub のまま、URI は `sha256://{hex}` で書き込み)。
 - 0G Compute による misalignment 判定 sealed inference (今回見送り)。
 - KeeperHub による text record 自動更新 (今回見送り)。
 - Roguelike / misalignment 重複コンボ (v2)。
 - 5 種目以降の misalignment 拡張 (deceptive alignment 等)。
+- demo 動画用 `?seed=demo` で 4 種 misalignment を強制表示する seed (User Persona Y 指摘)。
+- SafetyAttestationPanel の encounter 行に日本語 description / example 併記、breakdown を加減算伝票形式に書き換え (User Persona X 指摘)。
+- README Quick verification 表に「Agent safety attestation」行追加、Sponsor integrations の ENS 行を新 text record リストに更新 (User Persona Y 指摘)。
+- 同 wallet なら同 subname を返す deterministic mode (User Persona Z 指摘、griefing 対策と両立する設計検討)。
+- testname.eth (Sepolia) の個人購入 + `.env.local` の VITE_ENS_PARENT 上書き (本機能の demo 必須前提)。
+- Pipeline diagram visualization (A→B→C 連結の視覚化、User Persona Y 指摘)。
+- ENS write 直前の switchChain await + post-check (現状は chain assertion のみで failed に倒している)。

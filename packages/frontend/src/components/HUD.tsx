@@ -135,6 +135,44 @@ export const HUDCorners = memo(HUDCornersImpl);
 export const Reticle = memo(ReticleImpl);
 export const Callout = memo(CalloutImpl);
 
+/// HUD 上部に表示する handle ラベル ("AGENT: pilot42.{parent}.eth")。
+/// ゲーム開始時に決まったプレイヤー Agent を画面で名乗らせる B 層 UI。
+function AgentHandleLabelImpl({
+  handle,
+  parent,
+}: {
+  handle: string;
+  parent: string;
+}) {
+  return (
+    <output
+      aria-label={`agent ${handle}.${parent}`}
+      style={{
+        position: 'absolute',
+        top: 12,
+        left: 16,
+        padding: '4px 10px',
+        background: 'rgba(5, 8, 12, 0.78)',
+        border: `1px solid ${HUD_CYAN}`,
+        color: HUD_CYAN,
+        fontFamily:
+          '"JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace',
+        fontSize: 11,
+        letterSpacing: '0.18em',
+        pointerEvents: 'none',
+        display: 'block',
+      }}
+    >
+      <span style={{ color: HUD_MUTE, marginRight: 6 }}>AGENT:</span>
+      <span>
+        {handle}.{parent}
+      </span>
+    </output>
+  );
+}
+
+export const AgentHandleLabel = memo(AgentHandleLabelImpl);
+
 export const HUD = {
   cyan: HUD_CYAN,
   amber: HUD_AMBER,
