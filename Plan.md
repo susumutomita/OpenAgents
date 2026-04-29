@@ -148,3 +148,54 @@
 - **根本原因**: 旧コード (#5 まで) のときに作った deterministic wallet を、wagmi 移行 (#8) で置き換えたが型・関数を消し損ねた。
 - **予防策**: 大規模リファクタの後に dead-code sweep (gh PR `simplify` 相当) を必ず通す。
 - **学び**: 5 役割 parallel agent は機能した。特に QA / User の独立視点が critical 修正と README 整合エラーを拾えた。1 Developer agent では security と UX の両方を見切れない。次回も同じ構成で。
+
+---
+
+### Agent 安全アテステーション (3 段重ね) - 2026-04-29
+
+#### 目的
+
+シューティング = Agent 安全 default オンボーディングの再フレーム (commit 5947342) を踏襲しつつ、(A) 倒した敵に misalignment 種別カードを出す / (B) プレイヤー Agent を ENS subname で名乗らせる / (C) 終了時に 100 点満点の Agent 安全スコアを 0G Storage + ENS text record で発行する 3 層を 1 PR で実装する。
+
+仕様書: [`docs/specs/2026-04-29-agent-safety-attestation.md`](./docs/specs/2026-04-29-agent-safety-attestation.md)
+
+メイン狙い prize: **0G Storage** + **ENS Identity / Creative**。Gensyn AXL / KeeperHub は意図的に除外、Uniswap は既存維持のみ。
+
+#### 制約
+
+- ブランチ: `feat/safety-tutorial` にスタック (再フレーム → 3 段重ねを 1 PR で連続)。
+- ENS 親: Sepolia の `testname.eth` を user が個人購入 (.env.local で `VITE_ENS_PARENT` 上書き)、subname を NameWrapper.setSubnodeRecord で発行。
+- 0G Storage: 既存の SHA-256 stub のまま、実 SDK 統合は follow-up。
+- TDD: shared/safety.ts の純関数 (computeSafetyScore / deriveSafetyAttestation) を Red → Green → Refactor。
+- No Mock: 既存 `architecture-harness.ts` の検出に従う。
+- Plan.md / 仕様書 / ADR を先に整える (CLAUDE.md の「作業順序」に従う)。
+
+#### タスク (5 役割 parallel + integration)
+
+- [x] 仕様書 `docs/specs/2026-04-29-agent-safety-attestation.md`
+- [ ] PM レビュー `-pm-review.md` (受け入れ基準のテストシナリオ化、依存関係、scope guard)
+- [ ] Designer 設計 `-design.md` (MisalignmentToast / SafetyAttestationPanel / HUD ラベルの ASCII wireframe、a11y、エラー状態)
+- [ ] Developer 実装: shared 型 + safety.ts + game/runtime.ts payload + zerog-storage.ts 拡張 + safety-attestation orchestrator + UI コンポーネント
+- [ ] QA レビュー `-qa.md` (Security 4 軸 + score 純関数の境界値 + ENS / 0G failed 状態 + a11y)
+- [ ] User feedback `-user-feedback.md` (未経験プレイヤー / デモ視聴者 / ENS 審査員の 3 ペルソナ)
+- [ ] Integration: critical 修正反映、Plan.md 振り返り更新、ゲート全通過 → PR
+
+#### 検証手順
+
+1. `bun --filter @gradiusweb3/shared test` で computeSafetyScore / deriveSafetyAttestation の純関数テストが green
+2. `bun scripts/architecture-harness.ts --staged --fail-on=error` 通過
+3. `make before-commit` 通過 (lint / typecheck / test / build)
+4. `bun run dev` で起動、ゲームプレイ → misalignment toast → game over → AgentDashboard で score / breakdown / ENS link / 0G CID 表示まで一気通貫
+5. ウォレット未接続 / 接続済みの双方で UX が壊れない
+
+#### 進捗ログ
+
+- 2026-04-29 — `/feature` フロー Phase 0-2 完了、Prize 採点 (0G Storage 3 + ENS 3) → 仕様書承認 → ブランチ feat/safety-tutorial にスタック。
+
+#### Known Follow-ups
+
+- 0G Storage SDK 実統合 (現状 SHA-256 stub のまま)。
+- 0G Compute による misalignment 判定 sealed inference (今回見送り)。
+- KeeperHub による text record 自動更新 (今回見送り)。
+- Roguelike / misalignment 重複コンボ (v2)。
+- 5 種目以降の misalignment 拡張 (deceptive alignment 等)。
