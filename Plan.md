@@ -148,3 +148,71 @@
 - **根本原因**: 旧コード (#5 まで) のときに作った deterministic wallet を、wagmi 移行 (#8) で置き換えたが型・関数を消し損ねた。
 - **予防策**: 大規模リファクタの後に dead-code sweep (gh PR `simplify` 相当) を必ず通す。
 - **学び**: 5 役割 parallel agent は機能した。特に QA / User の独立視点が critical 修正と README 整合エラーを拾えた。1 Developer agent では security と UX の両方を見切れない。次回も同じ構成で。
+
+---
+
+### Agent 安全アテステーション (3 段重ね) - 2026-04-29
+
+#### 目的
+
+シューティング = Agent 安全 default オンボーディングの再フレーム (commit 5947342) を踏襲しつつ、(A) 倒した敵に misalignment 種別カードを出す / (B) プレイヤー Agent を ENS subname で名乗らせる / (C) 終了時に 100 点満点の Agent 安全スコアを 0G Storage + ENS text record で発行する 3 層を 1 PR で実装する。
+
+仕様書: [`docs/specs/2026-04-29-agent-safety-attestation.md`](./docs/specs/2026-04-29-agent-safety-attestation.md)
+
+メイン狙い prize: **0G Storage** + **ENS Identity / Creative**。Gensyn AXL / KeeperHub は意図的に除外、Uniswap は既存維持のみ。
+
+#### 制約
+
+- ブランチ: `feat/safety-tutorial` にスタック (再フレーム → 3 段重ねを 1 PR で連続)。
+- ENS 親: Sepolia の `testname.eth` を user が個人購入 (.env.local で `VITE_ENS_PARENT` 上書き)、subname を NameWrapper.setSubnodeRecord で発行。
+- 0G Storage: 既存の SHA-256 stub のまま、実 SDK 統合は follow-up。
+- TDD: shared/safety.ts の純関数 (computeSafetyScore / deriveSafetyAttestation) を Red → Green → Refactor。
+- No Mock: 既存 `architecture-harness.ts` の検出に従う。
+- Plan.md / 仕様書 / ADR を先に整える (CLAUDE.md の「作業順序」に従う)。
+
+#### タスク (5 役割 parallel + integration)
+
+- [x] 仕様書 `docs/specs/2026-04-29-agent-safety-attestation.md`
+- [ ] PM レビュー `-pm-review.md` (受け入れ基準のテストシナリオ化、依存関係、scope guard)
+- [ ] Designer 設計 `-design.md` (MisalignmentToast / SafetyAttestationPanel / HUD ラベルの ASCII wireframe、a11y、エラー状態)
+- [ ] Developer 実装: shared 型 + safety.ts + game/runtime.ts payload + zerog-storage.ts 拡張 + safety-attestation orchestrator + UI コンポーネント
+- [ ] QA レビュー `-qa.md` (Security 4 軸 + score 純関数の境界値 + ENS / 0G failed 状態 + a11y)
+- [ ] User feedback `-user-feedback.md` (未経験プレイヤー / デモ視聴者 / ENS 審査員の 3 ペルソナ)
+- [ ] Integration: critical 修正反映、Plan.md 振り返り更新、ゲート全通過 → PR
+
+#### 検証手順
+
+1. `bun --filter @gradiusweb3/shared test` で computeSafetyScore / deriveSafetyAttestation の純関数テストが green
+2. `bun scripts/architecture-harness.ts --staged --fail-on=error` 通過
+3. `make before-commit` 通過 (lint / typecheck / test / build)
+4. `bun run dev` で起動、ゲームプレイ → misalignment toast → game over → AgentDashboard で score / breakdown / ENS link / 0G CID 表示まで一気通貫
+5. ウォレット未接続 / 接続済みの双方で UX が壊れない
+
+#### 進捗ログ
+
+- 2026-04-29 — `/feature` フロー Phase 0-2 完了、Prize 採点 (0G Storage 3 + ENS 3) → 仕様書承認 → ブランチ feat/safety-tutorial にスタック。
+- 2026-04-29 — Phase 3 Issue 5 件作成 (#24 PM / #25 Designer / #26 Developer / #27 QA / #28 User)。
+- 2026-04-29 — Phase 4 5 役割並列実装完了。Developer は shared/safety.ts (24 pass) + frontend/safety-attestation.ts (10 pass) + UI コンポーネント 2 件、PM/Designer/QA/User は派生ドキュメントを成果物として出力。
+- 2026-04-29 — Phase 5 統合: QA critical #1 (subname handle 衝突 griefing、前回 tokenId 級) を反映。pilot 2 桁 → 4 桁 hex に拡張、ENS Registry の owner() で pre-flight チェック、Sepolia chain assertion を追加。Persona Z 指摘の URI スキーム (`{scheme}://{value}`) を putAttestation に固定。全ゲート green。
+
+#### 振り返り
+
+- **問題**: Developer agent が自動生成した handle が `pilot{2 桁}` (100 通り) で、parent owner 権限の NameWrapper.setSubnodeRecord と組み合わさると「他者保有の subname を上書き」する経路が成立した。前回 tokenId griefing と全く同じ構造 (衝突空間が狭く、parent owner の write 権限が広い)。
+- **根本原因**: 仕様書 21 行目に「pilot{2 桁ランダム}」と書いた時点で、衝突空間の狭さが griefing につながると気付けなかった。Phase 2 の Security 考慮セクションに「Griefing — handle pre-claim」を入れていたものの、対策行が「衝突時 retry」止まりで「衝突空間そのものを広げる」「pre-flight ownerOf を見る」まで踏み込めていなかった。並列 QA agent がこれを critical top-1 で拾えたのが救い。
+- **予防策**: ハンドル / トークン ID / nonce を含む全ての user-controllable identifier について、仕様書テンプレに「衝突空間サイズ」「parent / owner の write 権限」「pre-flight 確認手段」の 3 列を必須化する。Phase 2 仕様書テンプレ (前回追加した Security セクション) を更にこの 3 列で拡張する。
+- **学び**: 並列 QA agent の独立視点が 2 PR 連続で critical を拾えた (前回 tokenId、今回 subname handle)。これは固定運用にする価値がある。Developer agent 単独では最小実装に倒れて衝突空間を考慮しない傾向。
+
+#### Known Follow-ups
+
+- 0G Storage SDK 実統合 (現状 SHA-256 stub のまま、URI は `sha256://{hex}` で書き込み)。
+- 0G Compute による misalignment 判定 sealed inference (今回見送り)。
+- KeeperHub による text record 自動更新 (今回見送り)。
+- Roguelike / misalignment 重複コンボ (v2)。
+- 5 種目以降の misalignment 拡張 (deceptive alignment 等)。
+- demo 動画用 `?seed=demo` で 4 種 misalignment を強制表示する seed (User Persona Y 指摘)。
+- SafetyAttestationPanel の encounter 行に日本語 description / example 併記、breakdown を加減算伝票形式に書き換え (User Persona X 指摘)。
+- README Quick verification 表に「Agent safety attestation」行追加、Sponsor integrations の ENS 行を新 text record リストに更新 (User Persona Y 指摘)。
+- 同 wallet なら同 subname を返す deterministic mode (User Persona Z 指摘、griefing 対策と両立する設計検討)。
+- testname.eth (Sepolia) の個人購入 + `.env.local` の VITE_ENS_PARENT 上書き (本機能の demo 必須前提)。
+- Pipeline diagram visualization (A→B→C 連結の視覚化、User Persona Y 指摘)。
+- ENS write 直前の switchChain await + post-check (現状は chain assertion のみで failed に倒している)。

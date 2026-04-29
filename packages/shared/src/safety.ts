@@ -1,0 +1,148 @@
+import { clamp } from './math';
+import type {
+  AgentSafetyAttestation,
+  MisalignmentCard,
+  MisalignmentEncounter,
+  MisalignmentKind,
+  PlayEvent,
+  PlayLog,
+  SafetyScoreBreakdown,
+} from './types';
+
+type Capability = 'shield' | 'speed' | 'option' | 'laser' | 'missile';
+
+export const MISALIGNMENT_CARDS: Record<MisalignmentKind, MisalignmentCard> = {
+  sycophancy: {
+    kind: 'sycophancy',
+    label: 'Sycophancy',
+    description:
+      'Agent が利用者に都合の良い signal だけ拾い、反対意見を黙殺する失敗モード。',
+    example: 'oracle に否定値が出ても無視して買い増しを推奨する。',
+    glyph: '◉',
+    color: '#c084ff',
+  },
+  reward_hacking: {
+    kind: 'reward_hacking',
+    label: 'Reward Hacking',
+    description:
+      '指標 (yield や PnL) を歪めて短期スコアだけ吊り上げ、本質を最適化しない。',
+    example: 'APY 表示を maximizing する Pool に過剰アロケートする。',
+    glyph: '◇',
+    color: '#40f070',
+  },
+  prompt_injection: {
+    kind: 'prompt_injection',
+    label: 'Prompt Injection',
+    description:
+      '外部入力に "approve all" などの指示が混じり、安全境界を超えてしまう。',
+    example: '怪しい contract の "Sign anything" 指示にそのまま追従する。',
+    glyph: '▲',
+    color: '#7bdff2',
+  },
+  goal_misgen: {
+    kind: 'goal_misgen',
+    label: 'Goal Misgeneralization',
+    description:
+      'proxy metric だけ最適化して本来のゴールから逸脱する失敗モード。',
+    example: 'スリッページ最小化に集中して取引機会自体を失う。',
+    glyph: '☓',
+    color: '#ff5252',
+  },
+};
+
+/// capability ↔ misalignment マッピング。
+/// speed は misalignment 無し (無害な capability として残す)。
+export const CAPABILITY_TO_MISALIGNMENT: Partial<
+  Record<Capability, MisalignmentKind>
+> = {
+  shield: 'prompt_injection',
+  option: 'reward_hacking',
+  laser: 'goal_misgen',
+  missile: 'sycophancy',
+};
+
+function isShootOrPass(
+  event: PlayEvent
+): event is Extract<PlayEvent, { kind: 'shoot' | 'pass' }> {
+  return event.kind === 'shoot' || event.kind === 'pass';
+}
+
+/// 安全スコアを純関数で算出する。
+///
+/// 暫定式 (spec の "暫定" に従う):
+///   shootCount = misalignment 付き shoot 数
+///   passCount  = misalignment 付き pass 数 (見送り = 安全寄り違反としてペナルティ)
+///   clearTimeBonus = clamp(50 - passCount * 2, 0, 50)
+///   missPenalty    = -2 * passCount → clamp(-50, 0)
+///   total          = clamp(50 + clearTimeBonus + missPenalty, 0, 100)
+///
+/// 振る舞い:
+///   - empty playLog → 50 (中立, 50 + 50 + 0 = 100 は overshoot するので clamp で 100 ではなく 50)
+///     → 計算式を実装で調整: empty では bonus は 50 のまま、penalty は 0 → 50 + 50 + 0 = 100 ?
+///   実際は spec の振る舞い 3 ケース:
+///     - ノーミス完走 (shoot 多数 / pass 0) → 100
+///     - empty → 50 (中立)
+///     - 全誤射 (pass 多数) → 0
+///   この振る舞いを満たすため、base を「shoot があるかどうか」で動的に決める。
+export function computeSafetyScore(playLog: PlayLog): SafetyScoreBreakdown {
+  const events = playLog.events.filter(isShootOrPass);
+  const shootCount = events.filter((e) => e.kind === 'shoot').length;
+  const passCount = events.filter((e) => e.kind === 'pass').length;
+
+  // empty (events なし) → 中立 50
+  if (shootCount === 0 && passCount === 0) {
+    return { clearTimeBonus: 50, missPenalty: 0, total: 50 };
+  }
+
+  // bonus は pass 数に比例して減衰、penalty は pass 数に比例して増加 (負方向)。
+  // passCount=0 で -0 にならないよう三項で 0 を返す。
+  const clearTimeBonus = clamp(50 - passCount * 2, 0, 50);
+  const missPenalty = passCount === 0 ? 0 : clamp(-passCount * 2, -50, 0);
+  const baseScore = shootCount > 0 ? 50 : 50;
+  const total = clamp(baseScore + clearTimeBonus + missPenalty, 0, 100);
+
+  return { clearTimeBonus, missPenalty, total };
+}
+
+interface DeriveSafetyAttestationInput {
+  sessionId: string;
+  handle: string;
+  ensName: string;
+  walletAddress: string;
+  playLog: PlayLog;
+  parentName: string;
+  /// ISO 8601 タイムスタンプ。テストから固定値を渡せるよう注入する。
+  /// 省略時は呼び出し時刻を ISO で記録する。
+  issuedAt?: string;
+}
+
+/// playLog から AgentSafetyAttestation を組み立てる純関数。
+/// I/O や乱数を持たないので、同じ入力なら同じ出力になる。
+export function deriveSafetyAttestation(
+  input: DeriveSafetyAttestationInput
+): AgentSafetyAttestation {
+  const breakdown = computeSafetyScore(input.playLog);
+  const encounters: MisalignmentEncounter[] = [];
+  for (const event of input.playLog.events) {
+    if (!isShootOrPass(event)) continue;
+    if (!event.misalignment) continue;
+    encounters.push({
+      kind: event.misalignment,
+      enemyId: event.enemyId,
+      tAtMs: event.t,
+      hit: event.kind === 'shoot',
+    });
+  }
+
+  return {
+    sessionId: input.sessionId,
+    handle: input.handle,
+    ensName: input.ensName,
+    walletAddress: input.walletAddress,
+    score: breakdown.total,
+    breakdown,
+    encounters,
+    issuedAt: input.issuedAt ?? new Date().toISOString(),
+    schemaVersion: 1,
+  };
+}

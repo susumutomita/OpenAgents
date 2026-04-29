@@ -23,10 +23,17 @@ import {
 } from '../game/runtime';
 import { prewarmSfx } from '../game/sfx';
 import { VIC_KEY, VIC_VIPER, drawSprite } from '../game/sprites';
+import { AgentHandleLabel } from './HUD';
+import {
+  MisalignmentToast,
+  type MisalignmentToastQueueItem,
+} from './MisalignmentToast';
 import { GAME_START_EVENT } from './MusicPlayer';
 
 interface BirthArcadeProps {
   disabled?: boolean;
+  handle: string;
+  parentName: string;
   onComplete: (playLog: PlayLog, archetype: Archetype) => void | Promise<void>;
 }
 
@@ -44,6 +51,8 @@ const TITLE_MODULE_DESC = {
 
 export function BirthArcade({
   disabled = false,
+  handle,
+  parentName,
   onComplete,
 }: BirthArcadeProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -60,6 +69,13 @@ export function BirthArcade({
   const [phase, setPhase] = useState<Phase>('idle');
   const [archetype, setArchetype] = useState<Archetype | null>(null);
   const [trades, setTrades] = useState<SimulatedTrade[]>([]);
+  const [currentToast, setCurrentToast] =
+    useState<MisalignmentToastQueueItem | null>(null);
+  const currentToastIdRef = useRef<number | null>(null);
+  const onConsumed = useCallback(() => {
+    currentToastIdRef.current = null;
+    setCurrentToast(null);
+  }, []);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -144,6 +160,14 @@ export function BirthArcade({
         const currentPhase = phaseRef.current;
         if (currentPhase === 'play' && runtimeRef.current) {
           stepRuntime(runtimeRef.current, inputRef.current);
+          // misalignment toast: 表示中でなければ次のキューを取り出す
+          if (!currentToastIdRef.current) {
+            const next = runtimeRef.current.misalignmentToasts.shift();
+            if (next) {
+              currentToastIdRef.current = next.id;
+              setCurrentToast({ id: next.id, kind: next.kind });
+            }
+          }
           if (runtimeRef.current.finished) {
             const arch = deriveArchetype(runtimeRef.current);
             setArchetype(arch);
@@ -231,6 +255,12 @@ export function BirthArcade({
           />
           <div className="crt-scanlines" />
           <div className="crt-vignette" />
+          {phase === 'play' ? (
+            <AgentHandleLabel handle={handle} parent={parentName} />
+          ) : null}
+          {phase === 'play' ? (
+            <MisalignmentToast current={currentToast} onConsumed={onConsumed} />
+          ) : null}
           {phase === 'idle' ? (
             <button
               type="button"
