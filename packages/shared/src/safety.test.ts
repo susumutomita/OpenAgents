@@ -3,7 +3,9 @@ import {
   CAPABILITY_TO_MISALIGNMENT,
   MISALIGNMENT_CARDS,
   computeSafetyScore,
+  deriveDeterministicHandle,
   deriveSafetyAttestation,
+  generateRandomHandle,
 } from './safety';
 import type { PlayEvent, PlayLog } from './types';
 
@@ -256,6 +258,59 @@ describe('MISALIGNMENT_CARDS - misalignment カード定義', () => {
       expect(['◉', '◇', '▲', '☓']).toContain(card.glyph);
       expect(card.color).toMatch(/^#[0-9a-fA-F]{3,8}$/);
     }
+  });
+});
+
+describe('deriveDeterministicHandle - wallet と parent から deterministic に handle を導く', () => {
+  it('同じ wallet + parent からは同じ handle が生成される', () => {
+    const w = '0xF3131999a3D9e5C43b2EDA9B3661C437B2587216';
+    const p = 'gradiusweb3.eth';
+    expect(deriveDeterministicHandle(w, p)).toBe(
+      deriveDeterministicHandle(w, p)
+    );
+  });
+
+  it('walletAddress の大文字小文字が変わっても同じ handle になる (case-insensitive)', () => {
+    const lower = '0xf3131999a3d9e5c43b2eda9b3661c437b2587216';
+    const upper = '0xF3131999A3D9E5C43B2EDA9B3661C437B2587216';
+    expect(deriveDeterministicHandle(lower, 'gradiusweb3.eth')).toBe(
+      deriveDeterministicHandle(upper, 'gradiusweb3.eth')
+    );
+  });
+
+  it('parent が違うと別の handle になる (subname 衝突を狭める)', () => {
+    const w = '0xF3131999a3D9e5C43b2EDA9B3661C437B2587216';
+    expect(deriveDeterministicHandle(w, 'gradiusweb3.eth')).not.toBe(
+      deriveDeterministicHandle(w, 'testname.eth')
+    );
+  });
+
+  it('違う wallet からは違う handle になる (確率的にはほぼ確実)', () => {
+    const a = '0xF3131999a3D9e5C43b2EDA9B3661C437B2587216';
+    const b = '0x0000000000000000000000000000000000000001';
+    expect(deriveDeterministicHandle(a, 'gradiusweb3.eth')).not.toBe(
+      deriveDeterministicHandle(b, 'gradiusweb3.eth')
+    );
+  });
+
+  it('戻り値は pilot で始まる 4 桁 hex 形式 (pilot[0-9a-f]{4})', () => {
+    const handle = deriveDeterministicHandle(
+      '0xF3131999a3D9e5C43b2EDA9B3661C437B2587216',
+      'gradiusweb3.eth'
+    );
+    expect(handle).toMatch(/^pilot[0-9a-f]{4}$/);
+  });
+});
+
+describe('generateRandomHandle - wallet 未接続時のフォールバック handle', () => {
+  it('戻り値は pilot で始まる 4 桁 hex 形式', () => {
+    expect(generateRandomHandle()).toMatch(/^pilot[0-9a-f]{4}$/);
+  });
+
+  it('連続呼び出しで同じ値ばかりを返さない (ランダム性の最小限の確認)', () => {
+    const samples = new Set<string>();
+    for (let i = 0; i < 32; i += 1) samples.add(generateRandomHandle());
+    expect(samples.size).toBeGreaterThan(1);
   });
 });
 

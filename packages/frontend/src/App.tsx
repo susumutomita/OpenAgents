@@ -2,6 +2,8 @@ import {
   type PlayLog,
   type StoredAgentBirth,
   createAgentBirthDraft,
+  deriveDeterministicHandle,
+  generateRandomHandle,
   shortAddress,
 } from '@gradiusweb3/shared/browser';
 import {
@@ -9,7 +11,6 @@ import {
   type Ref,
   forwardRef,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -32,16 +33,6 @@ import { executeFirstSwap } from './web3/uniswap-swap';
 
 const DEFAULT_PARENT_NAME =
   (import.meta.env.VITE_ENS_PARENT as string | undefined) ?? 'gradiusweb3.eth';
-
-function generatePilotHandle(): string {
-  // 4 桁 hex で 65,536 通り。前回 PR の tokenId griefing と同型の
-  // 「衝突空間が狭く parent owner が上書きできる」経路を避けるため、
-  // 仕様書 21 行目の "pilot{2 桁}" (100 通り) からここで拡張している。
-  const buf = new Uint8Array(2);
-  globalThis.crypto.getRandomValues(buf);
-  const n = ((buf[0] ?? 0) << 8) | (buf[1] ?? 0);
-  return `pilot${n.toString(16).padStart(4, '0')}`;
-}
 
 const A = {
   bg: '#05080c',
@@ -210,12 +201,25 @@ export function App() {
   const [swapping, setSwapping] = useState(false);
   const [safetyResult, setSafetyResult] =
     useState<SafetyAttestationResult | null>(null);
-  // セッション内ランダム handle: マウント時に 1 回だけ生成。
-  const handle = useMemo(generatePilotHandle, []);
   const parentName = DEFAULT_PARENT_NAME;
   const arcadeRef = useRef<HTMLDivElement | null>(null);
   const { address: ownerAddress } = useAccount();
   const { data: walletClient } = useWalletClient();
+  // wallet 未接続なら random、接続済なら deterministic。後から接続された場合に
+  // 一度 deterministic に切り替わるが、disconnect で random に戻すと混乱するので
+  // 一度 deterministic になったら固定する。
+  const [handle, setHandle] = useState<string>(() =>
+    ownerAddress
+      ? deriveDeterministicHandle(ownerAddress, DEFAULT_PARENT_NAME)
+      : generateRandomHandle()
+  );
+  useEffect(() => {
+    if (!ownerAddress) return;
+    setHandle((current) => {
+      const deterministic = deriveDeterministicHandle(ownerAddress, parentName);
+      return current === deterministic ? current : deterministic;
+    });
+  }, [ownerAddress, parentName]);
 
   // Refs that always carry the freshest values so the async handleComplete
   // (called via BirthArcade's onCompleteRef) never sees a stale capture.

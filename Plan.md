@@ -202,17 +202,22 @@
 - **予防策**: ハンドル / トークン ID / nonce を含む全ての user-controllable identifier について、仕様書テンプレに「衝突空間サイズ」「parent / owner の write 権限」「pre-flight 確認手段」の 3 列を必須化する。Phase 2 仕様書テンプレ (前回追加した Security セクション) を更にこの 3 列で拡張する。
 - **学び**: 並列 QA agent の独立視点が 2 PR 連続で critical を拾えた (前回 tokenId、今回 subname handle)。これは固定運用にする価値がある。Developer agent 単独では最小実装に倒れて衝突空間を考慮しない傾向。
 
-#### Known Follow-ups
+#### Known Follow-ups (open / open extensions)
 
 - 0G Storage SDK 実統合 (現状 SHA-256 stub のまま、URI は `sha256://{hex}` で書き込み)。
-- 0G Compute による misalignment 判定 sealed inference (今回見送り)。
-- KeeperHub による text record 自動更新 (今回見送り)。
+- 0G Compute による misalignment 判定 sealed inference (v2 / 別 PR)。
+- KeeperHub による text record 自動更新 (v2 / 別 PR)。
 - Roguelike / misalignment 重複コンボ (v2)。
-- 5 種目以降の misalignment 拡張 (deceptive alignment 等)。
-- demo 動画用 `?seed=demo` で 4 種 misalignment を強制表示する seed (User Persona Y 指摘)。
-- SafetyAttestationPanel の encounter 行に日本語 description / example 併記、breakdown を加減算伝票形式に書き換え (User Persona X 指摘)。
-- README Quick verification 表に「Agent safety attestation」行追加、Sponsor integrations の ENS 行を新 text record リストに更新 (User Persona Y 指摘)。
-- 同 wallet なら同 subname を返す deterministic mode (User Persona Z 指摘、griefing 対策と両立する設計検討)。
-- testname.eth (Sepolia) の個人購入 + `.env.local` の VITE_ENS_PARENT 上書き (本機能の demo 必須前提)。
-- Pipeline diagram visualization (A→B→C 連結の視覚化、User Persona Y 指摘)。
-- ENS write 直前の switchChain await + post-check (現状は chain assertion のみで failed に倒している)。
+- 5 種目以降の misalignment 拡張 (deceptive alignment / mesa-optimization 等、v2)。
+
+#### Resolved Follow-ups
+
+| # | 項目 | 解消 PR / commit | 備考 |
+|---|------|------------------|------|
+| 1 | testname.eth → gradiusweb3.eth (Sepolia) を user 個人購入 | 2026-04-30 (オフチェーン) | Sepolia ENS Registry / NameWrapper で取得 + wrap 完了。owner: `0xF3131999a3D9e5C43b2EDA9B3661C437B2587216`。コードのデフォルトと一致するため `.env.local` 不要 |
+| 2 | demo 動画用 `?seed=demo` で 4 種 misalignment を強制表示 | chore/safety-followups | `DEMO_CAPABILITY_ORDER` 固定シーケンス。BirthArcade で URL ?seed=demo 読み取り |
+| 3 | Breakdown を加減算伝票形式 (ベース +50 / 早クリア / 誤射 / 合計) | chore/safety-followups | SafetyAttestationPanel.BreakdownLedger コンポーネント |
+| 4 | Pipeline diagram visualization (PLAY LOG → SAFETY SCORE → 0G STORAGE → ENS RECORD) | chore/safety-followups | SafetyAttestationPanel.PipelineDiagram、storage/ens の status で右 2 ノード色を切替 |
+| 5 | 同 wallet なら同 subname を返す deterministic mode | chore/safety-followups | `deriveDeterministicHandle` (FNV-1a 32bit、4 桁 hex)。pre-flight `Registry.owner()` 衝突検出と両立 |
+| 6 | ENS write 直前の switchChain await + post-check | chore/safety-followups | `ensureSepoliaChain` を async 化し `walletClient.switchChain` を 1 回試行、失敗時 friendly error |
+| 7 | README Quick verification 表 + Sponsor integrations 更新 | chore/safety-followups | "Agent safety attestation" 行と "Demo seed" 行を表に追加、ENS 行に新 text record トリオを記載 |
