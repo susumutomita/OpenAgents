@@ -1,5 +1,5 @@
 import type { PlayLog } from '@gradiusweb3/shared/browser';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { drawBigText, pixelText } from '../game/font';
 import { PAL, RH, RW } from '../game/palette';
 import {
@@ -66,6 +66,14 @@ export function BirthArcade({
   const phaseRef = useRef<Phase>('idle');
   const onCompleteRef = useRef(onComplete);
   const titleTRef = useRef(0);
+  // demo モード: ?seed=demo を URL に付けると敵 wave が 4 種 misalignment を
+  // 確実に最初に出すよう DEMO_CAPABILITY_ORDER で固定される (Persona Y 指摘)。
+  const seed = useMemo<'demo' | 'random'>(() => {
+    if (typeof window === 'undefined') return 'random';
+    return new URLSearchParams(window.location.search).get('seed') === 'demo'
+      ? 'demo'
+      : 'random';
+  }, []);
   const [phase, setPhase] = useState<Phase>('idle');
   const [archetype, setArchetype] = useState<Archetype | null>(null);
   const [trades, setTrades] = useState<SimulatedTrade[]>([]);
@@ -86,20 +94,20 @@ export function BirthArcade({
 
   const startGame = useCallback(() => {
     if (disabled) return;
-    runtimeRef.current = createRuntime();
+    runtimeRef.current = createRuntime(undefined, seed);
     setArchetype(null);
     setTrades([]);
     prewarmSfx();
     window.dispatchEvent(new Event(GAME_START_EVENT));
     setPhase('play');
-  }, [disabled]);
+  }, [disabled, seed]);
 
   const replay = useCallback(() => {
-    runtimeRef.current = createRuntime();
+    runtimeRef.current = createRuntime(undefined, seed);
     prewarmSfx();
     window.dispatchEvent(new Event(GAME_START_EVENT));
     setPhase('play');
-  }, []);
+  }, [seed]);
 
   // Animation loop
   useEffect(() => {

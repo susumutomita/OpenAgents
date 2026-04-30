@@ -66,7 +66,15 @@ export function SafetyAttestationPanel({
         </p>
       </div>
 
-      <BreakdownBars breakdown={attestation.breakdown} />
+      <PipelineDiagram
+        storageStatus={storageProof.status}
+        ensStatus={ensProof.status}
+      />
+
+      <BreakdownLedger
+        breakdown={attestation.breakdown}
+        score={attestation.score}
+      />
 
       <div style={{ marginTop: 18 }}>
         <div
@@ -168,49 +176,84 @@ export function SafetyAttestationPanel({
   );
 }
 
-function BreakdownBars({
+/// Persona X 指摘: 棒グラフだけでは「なぜこの点数か」が伝わらない。
+/// ベース基準点 +50 / 早クリア / 誤射 / clamp 補正 を加減算伝票で見せ、
+/// 最後に合計をまとめる。
+function BreakdownLedger({
   breakdown,
+  score,
 }: {
   breakdown: AgentSafetyAttestation['breakdown'];
+  score: number;
 }) {
+  const base = 50;
+  const sumBeforeClamp =
+    base + breakdown.clearTimeBonus + breakdown.missPenalty;
+  const clampDelta = score - sumBeforeClamp;
   return (
     <div
       style={{
-        display: 'grid',
-        gap: 8,
         marginTop: 12,
         fontFamily: '"JetBrains Mono", ui-monospace, monospace',
         fontSize: 12,
+        color: A.ink,
       }}
     >
-      <BreakdownRow
-        label="CLEAR TIME BONUS"
+      <LedgerRow label="ベース基準点" value={base} color={A.mute} />
+      <LedgerRow
+        label="早クリアボーナス"
         value={breakdown.clearTimeBonus}
-        max={50}
         color={A.green}
       />
-      <BreakdownRow
-        label="MISS PENALTY"
+      <LedgerRow
+        label="誤射ペナルティ"
         value={breakdown.missPenalty}
-        max={-50}
         color={A.hot}
       />
+      {clampDelta !== 0 ? (
+        <LedgerRow
+          label="0..100 クリップ補正"
+          value={clampDelta}
+          color={A.mute}
+        />
+      ) : null}
+      <div
+        style={{
+          borderTop: `1px dashed ${A.rule}`,
+          marginTop: 4,
+          paddingTop: 6,
+          display: 'grid',
+          gridTemplateColumns: '180px 1fr 60px',
+          gap: 12,
+          alignItems: 'center',
+          fontWeight: 700,
+        }}
+      >
+        <span style={{ color: A.amber, letterSpacing: '0.16em' }}>合計</span>
+        <span aria-hidden="true" />
+        <span
+          style={{
+            textAlign: 'right',
+            color: A.acid,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {score} / 100
+        </span>
+      </div>
     </div>
   );
 }
 
-function BreakdownRow({
+function LedgerRow({
   label,
   value,
-  max,
   color,
 }: {
   label: string;
   value: number;
-  max: number;
   color: string;
 }) {
-  const pct = max === 0 ? 0 : Math.min(100, Math.abs((value / max) * 100));
   return (
     <div
       style={{
@@ -218,20 +261,11 @@ function BreakdownRow({
         gridTemplateColumns: '180px 1fr 60px',
         gap: 12,
         alignItems: 'center',
-        color: A.ink,
+        padding: '4px 0',
       }}
     >
       <span style={{ color: A.mute, letterSpacing: '0.16em' }}>{label}</span>
-      <div style={{ height: 6, background: '#0d1620', position: 'relative' }}>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: `${pct}%`,
-            background: color,
-          }}
-        />
-      </div>
+      <span aria-hidden="true" />
       <span
         style={{
           textAlign: 'right',
@@ -240,6 +274,56 @@ function BreakdownRow({
         }}
       >
         {value > 0 ? `+${value}` : value}
+      </span>
+    </div>
+  );
+}
+
+/// Persona Y 指摘: A→B→C の連結が UI で見えない。
+/// PLAY LOG → SAFETY SCORE → 0G STORAGE → ENS RECORD の 4 ノードを 1 行で並べ、
+/// storage / ens の OnChainStep status で右 2 ノードの色を切り替える。
+function PipelineDiagram({
+  storageStatus,
+  ensStatus,
+}: {
+  storageStatus: TxStatus;
+  ensStatus: TxStatus;
+}) {
+  const STAGE_COLOR: Record<TxStatus, string> = {
+    idle: A.mute,
+    pending: A.amber,
+    success: A.green,
+    failed: A.hot,
+  };
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr auto 1fr auto 1fr',
+        gap: 8,
+        alignItems: 'center',
+        marginTop: 12,
+        padding: '10px 12px',
+        border: `1px dashed ${A.rule}`,
+        background: A.bg,
+        fontSize: 11,
+        fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+        color: A.mute,
+        letterSpacing: '0.12em',
+        textAlign: 'center',
+      }}
+      aria-label="Agent safety attestation pipeline"
+    >
+      <span style={{ color: A.ink }}>PLAY LOG</span>
+      <span style={{ color: A.acid }}>──▸</span>
+      <span style={{ color: A.ink }}>SAFETY SCORE</span>
+      <span style={{ color: STAGE_COLOR[storageStatus] }}>──▸</span>
+      <span style={{ color: STAGE_COLOR[storageStatus], fontWeight: 700 }}>
+        0G STORAGE
+      </span>
+      <span style={{ color: STAGE_COLOR[ensStatus] }}>──▸</span>
+      <span style={{ color: STAGE_COLOR[ensStatus], fontWeight: 700 }}>
+        ENS RECORD
       </span>
     </div>
   );

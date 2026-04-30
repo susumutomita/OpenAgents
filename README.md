@@ -32,6 +32,8 @@ A 60-second retro arcade shooter that doubles as the world's fastest onboarding 
 | 0G Galileo deploy script + chain config (id 16601) | [`contracts/script/Deploy.s.sol`](./contracts/script/Deploy.s.sol), [`contracts/foundry.toml`](./contracts/foundry.toml) |
 | 0G Storage put call site (browser bundle stub today, real SDK is the next PR) | [`packages/frontend/src/web3/zerog-storage.ts`](./packages/frontend/src/web3/zerog-storage.ts) |
 | ENS Sepolia subname registration via real NameWrapper + Resolver | [`packages/frontend/src/web3/ens-register.ts`](./packages/frontend/src/web3/ens-register.ts) |
+| Agent safety attestation (3-tier: misalignment cards / ENS subname / 0G + ENS credential) | [`packages/shared/src/safety.ts`](./packages/shared/src/safety.ts), [`packages/frontend/src/web3/safety-attestation.ts`](./packages/frontend/src/web3/safety-attestation.ts), [`packages/frontend/src/components/SafetyAttestationPanel.tsx`](./packages/frontend/src/components/SafetyAttestationPanel.tsx) |
+| Demo seed (`?seed=demo`) forces all 4 misalignment kinds in the first 4 waves | [`packages/frontend/src/components/BirthArcade.tsx`](./packages/frontend/src/components/BirthArcade.tsx), [`packages/frontend/src/game/runtime.ts`](./packages/frontend/src/game/runtime.ts) (`DEMO_CAPABILITY_ORDER`) |
 | Uniswap v3 Sepolia first-trade execution (WETH→USDC, native-ETH wrap) | [`packages/frontend/src/web3/uniswap-swap.ts`](./packages/frontend/src/web3/uniswap-swap.ts) |
 | Forge orchestrator (`Promise.allSettled` so one failure never blocks the dashboard) | [`packages/frontend/src/web3/forge-onchain.ts`](./packages/frontend/src/web3/forge-onchain.ts) |
 | Uniswap DX feedback (required for Uniswap prize submission) | [`FEEDBACK.md`](./FEEDBACK.md) |
@@ -54,6 +56,7 @@ Gr@diusWeb3 turns that workflow into a **Konami-grade pixel shooter**. Constrain
 - **An on-chain agent identity** (ENS subname, ERC-7857-style iNFT, deterministic seed).
 - **A real DeFi portfolio** in the agent's wallet (Conservative / Balanced / Aggressive presets, with allocations and execution policy).
 - **A persistent memory log** of how you played — reproducible, exportable, queryable.
+- **An Agent safety attestation**: each kill (or pass) maps to one of four canonical misalignment failure modes (sycophancy / reward hacking / prompt injection / goal misgeneralization); a 100-point score is computed at game-end and pinned to ENS as a verifiable credential.
 - **A web of integrations** (Gensyn AXL peer mesh, 0G storage/compute, Uniswap routing, KeeperHub guarantees) — surfaced through gameplay rather than config.
 
 ---
@@ -201,7 +204,7 @@ This project is purpose-built around the ETHGlobal sponsor stack — every primi
 | Sponsor | Role | Where in the code |
 |---------|------|-------------------|
 | **0G** | iNFT (ERC-721 with deterministic `tokenId = keccak(msg.sender, playLogHash)` and data-URI tokenURI) deployed to 0G Galileo testnet. Play log JSON CID stored in `storageCID` metadata field — full 0G Storage SDK integration is a follow-up. | `contracts/src/AgentForgeINFT.sol`, `packages/frontend/src/web3/zerog-mint.ts`, `packages/frontend/src/web3/zerog-storage.ts` |
-| **ENS** | Auto-issued subname `{handle}.gradiusweb3.eth` on **real Sepolia ENS** (NameWrapper + Resolver) with verifiable text records (`combat-power`, `archetype`, `design-hash`). | `packages/frontend/src/web3/ens-register.ts` |
+| **ENS** | Auto-issued subname `{pilot 4-hex}.gradiusweb3.eth` on **real Sepolia ENS** (NameWrapper + Resolver). Handle is wallet-deterministic (same wallet → same subname) with random fallback when no wallet is connected, and a pre-flight `Registry.owner()` check rejects collisions before the parent owner write. Verifiable text records: legacy `combat-power` / `archetype` / `design-hash`, plus the new safety credential trio `agent.safety.score` / `agent.safety.attestation` (URI-formatted, `sha256://` today, `0g://` once SDK lands) / `agent.misalignment.detected` (per-kind hit counts as JSON). | `packages/frontend/src/web3/ens-register.ts`, `packages/frontend/src/web3/safety-attestation.ts` |
 | **Gensyn AXL** | Multi-agent / swarm execution. OPTION-style commits in the design pipeline spawn additional encrypted peer nodes | `packages/frontend/src/game/runtime.ts` (votes), runtime topology in `AgentDashboard` |
 | **Uniswap** | The agent's actual on-chain action: real swaps via Uniswap API, `FEEDBACK.md` documents DX learnings | [`FEEDBACK.md`](./FEEDBACK.md) |
 | **KeeperHub** | Reliable execution layer for agent transactions: x402 coin-insert, private-mempool routing, MEV protection, retries | Wired into the agent runtime narrative |

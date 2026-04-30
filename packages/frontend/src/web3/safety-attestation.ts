@@ -36,11 +36,19 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 /// Sepolia 接続を assert する。前回 Web3 Wiring の振り返りで「switchChain 漏れ」が
 /// 発生しており、本機能の ENS 書込みも Sepolia 固定でないと別 chain に書く事故になる。
-function ensureSepoliaChain(walletClient: WalletClient): void {
+/// 不一致の場合は wallet が対応していれば 1 度 switchChain を試行する。
+/// (viem WalletClient.chain は immutable なので switchChain 後の再参照は呼び出し側
+/// で wagmi の useWalletClient 再 render に任せる。本関数は switchChain が
+/// throw しなければ成功とみなす。)
+async function ensureSepoliaChain(walletClient: WalletClient): Promise<void> {
   const chainId = walletClient.chain?.id;
-  if (chainId !== sepolia.id) {
+  if (chainId === sepolia.id) return;
+  try {
+    await walletClient.switchChain({ id: sepolia.id });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'unknown';
     throw new Error(
-      `chain mismatch — Sepolia (${sepolia.id}) に切り替えてください (現在 ${chainId ?? 'unknown'})`
+      `chain mismatch — Sepolia (${sepolia.id}) への切替に失敗しました (現在 ${chainId ?? 'unknown'}): ${detail}`
     );
   }
 }
@@ -169,7 +177,7 @@ export async function runSafetyAttestation(
   // どちらかが失敗しても storage put は走らせる (ローカル credential は得たい)。
   let preflightError: string | undefined;
   try {
-    ensureSepoliaChain(walletClient);
+    await ensureSepoliaChain(walletClient);
     await ensureSubnameAvailable(input.handle, input.parentName, owner);
   } catch (err) {
     preflightError = errorMessage(err);

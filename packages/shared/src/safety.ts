@@ -104,6 +104,35 @@ export function computeSafetyScore(playLog: PlayLog): SafetyScoreBreakdown {
   return { clearTimeBonus, missPenalty, total };
 }
 
+/// 同じ wallet で何度プレイしても同じ subname を引き戻せるよう、
+/// `walletAddress + parentName` から 4 桁 hex を deterministic に導く。
+/// - セキュリティ目的の hash ではない (安定性目的)。FNV-1a 32bit。
+/// - 戻り値は `pilot{4 桁 hex}` 形式。衝突空間 65,536 通り。
+/// - pre-flight ownerOf チェックで「他者保有 → random 再生成」に倒すので、
+///   deterministic と griefing 耐性は両立する。
+export function deriveDeterministicHandle(
+  walletAddress: string,
+  parentName: string
+): string {
+  const input = `${walletAddress.toLowerCase()}:${parentName.toLowerCase()}`;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  const h = (hash >>> 0) & 0xffff;
+  return `pilot${h.toString(16).padStart(4, '0')}`;
+}
+
+/// 4 桁 hex のランダム handle。wallet 未接続時のフォールバック。
+/// crypto.getRandomValues を使う (bun と browser 両方サポート)。
+export function generateRandomHandle(): string {
+  const buf = new Uint8Array(2);
+  globalThis.crypto.getRandomValues(buf);
+  const n = ((buf[0] ?? 0) << 8) | (buf[1] ?? 0);
+  return `pilot${n.toString(16).padStart(4, '0')}`;
+}
+
 interface DeriveSafetyAttestationInput {
   sessionId: string;
   handle: string;

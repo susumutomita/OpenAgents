@@ -82,6 +82,20 @@ export const CAPABILITY_ORDER: Capability[] = [
   'missile',
 ];
 
+/// `?seed=demo` 用の固定シーケンス。CAPABILITY_TO_MISALIGNMENT が割当てられる
+/// 4 種 (shield / option / laser / missile) を先頭に並べ、最後の speed のみ
+/// misalignment 無し。これで 60 秒 demo の最初の 4 wave で 4 種のカードが
+/// 確実に出る (Persona Y "demo seed 振れ防止" 指摘への対策)。
+export const DEMO_CAPABILITY_ORDER: Capability[] = [
+  'shield',
+  'option',
+  'laser',
+  'missile',
+  'speed',
+];
+
+export type RuntimeSeed = 'random' | 'demo';
+
 /// Player-facing capability names. Each enemy color = one of the agent
 /// safety / strategy defaults that real DeFi operators forget to configure.
 /// Keep these short and intuitive; longer descriptions live in the dashboard.
@@ -401,9 +415,14 @@ export interface Runtime {
   archetypePeek: Archetype;
   lastCommit: Capability | null;
   lastCommitT: number;
+  /// 'demo' のとき pickEnemyCapability が DEMO_CAPABILITY_ORDER を使う。
+  seed: RuntimeSeed;
 }
 
-export function createRuntime(chain: ChainId = 'ARB'): Runtime {
+export function createRuntime(
+  chain: ChainId = 'ARB',
+  seed: RuntimeSeed = 'random'
+): Runtime {
   return {
     t: 0,
     player: { x: 60, y: PLAY_H / 2, hp: 4, iframes: 24 },
@@ -440,6 +459,7 @@ export function createRuntime(chain: ChainId = 'ARB'): Runtime {
     archetypePeek: 'balanced',
     lastCommit: null,
     lastCommitT: 0,
+    seed,
   };
 }
 
@@ -488,8 +508,8 @@ function spawnBurst(
 }
 
 function pickEnemyCapability(rt: Runtime): EnemyCapability {
-  const capability =
-    CAPABILITY_ORDER[rt.enemyCounter % CAPABILITY_ORDER.length] ?? 'shield';
+  const order = rt.seed === 'demo' ? DEMO_CAPABILITY_ORDER : CAPABILITY_ORDER;
+  const capability = order[rt.enemyCounter % order.length] ?? 'shield';
   return capabilityById(capability);
 }
 
