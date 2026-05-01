@@ -15,7 +15,8 @@ import {
 import { galileo, sepolia } from './chains';
 import { registerSubname } from './ens-register';
 import type { EnsProof, OnChainStep, StorageProof } from './types';
-import { type ZeroGSigner, putAttestation } from './zerog-storage';
+import { errorMessage } from './utils';
+import { buildZeroGSigner, putAttestation } from './zerog-storage';
 
 /// Sepolia の ENS Registry。NameWrapper とは別、namehash → owner address を引く。
 /// 値は ENS deployments registry の deterministic deploy アドレス。
@@ -63,29 +64,6 @@ async function ensureSepoliaChain(walletClient: WalletClient): Promise<void> {
 /// 0G Galileo 接続を assert する。0G Storage への put 直前のみ呼ぶ。
 async function ensureGalileoChain(walletClient: WalletClient): Promise<void> {
   await ensureChain(walletClient, galileo.id, '0G Galileo');
-}
-
-/// viem WalletClient から 0G TS SDK が要求する最低限の signer (ZeroGSigner) を
-/// 構築する。SDK 内部は ethers v6 の Signer を期待するため、EIP-1193 transport を
-/// `ethers.BrowserProvider` でラップして getSigner を返す。動的 import にして
-/// bun test 経路 (ethers が未ロード) では SDK 経路に到達しない。
-async function buildZeroGSigner(
-  walletClient: WalletClient
-): Promise<ZeroGSigner> {
-  const ethers = await import('ethers');
-  // walletClient.transport は EIP-1193 互換の `request({method, params})` を持つ。
-  // BrowserProvider はこれを直接受けて Signer を返せる。
-  // ethers.Eip1193Provider は { request: ({method, params}) => Promise<unknown> }
-  // でしかないので unknown 経由で渡す。
-  const provider = new ethers.BrowserProvider(
-    walletClient.transport as unknown as ConstructorParameters<
-      typeof ethers.BrowserProvider
-    >[0]
-  );
-  // address を渡すと unlock prompt をスキップして既存 account の signer を取れる。
-  const account = walletClient.account;
-  const signer = await provider.getSigner(account?.address);
-  return signer as unknown as ZeroGSigner;
 }
 
 /// pilot{4 桁 hex} の handle が「自分以外のオーナーに先取りされていない」ことを
@@ -168,11 +146,6 @@ export interface RunSafetyAttestationInput {
   parentName: string;
 }
 
-function errorMessage(reason: unknown): string {
-  if (reason instanceof Error) return reason.message;
-  return typeof reason === 'string' ? reason : 'unknown error';
-}
-
 /// orchestrator: deriveSafetyAttestation で score を計算し、
 /// 0G Storage put と ENS subname registration を Promise.allSettled で並列実行。
 /// どの一方が失敗しても score 計算とローカル表示は完走する (フェイルセーフ)。
@@ -206,58 +179,44 @@ export async function runSafetyAttestation(
   // Phase 1: 0G Galileo に切替えて real put を試行する。chain switch / signer
   // 構築 / SDK 呼び出しいずれの失敗も sha256:// stub にフォールバックして
   // ENS 経路は止めない (フェイルセーフ要件)。
-  let storageData: { cid: string } | undefined;
-  let storageError: string | undefined;
+  // putAttestation は never throw 契約 (常に PutResult を返す) なので、外側
+  // try/catch は ensureGalileoChain / buildZeroGSigner の失敗のみを拾う。
+  let storageProof: OnChainStep<StorageProof>;
   try {
     await ensureGalileoChain(walletClient);
     const signer = await buildZeroGSigner(walletClient);
     const result = await putAttestation(attestation, signer);
-    storageData = { cid: result.cid };
-    if (!result.realUpload && result.error) {
-      storageError = result.error;
-    }
+    storageProof = result.realUpload
+      ? { status: 'success', data: { cid: result.cid } }
+      : {
+          status: 'failed',
+          error: result.error ?? 'real upload skipped',
+          data: { cid: result.cid },
+        };
   } catch (err) {
-    // chain switch 失敗 / signer 構築失敗 — sha256 fallback で継続
     const fallback = await putAttestation(attestation);
-    storageData = { cid: fallback.cid };
-    storageError = errorMessage(err);
+    storageProof = {
+      status: 'failed',
+      error: errorMessage(err),
+      data: { cid: fallback.cid },
+    };
   }
 
-  // Phase 2: Sepolia に戻す → ENS write。Sepolia switch 自体が失敗したら
-  // ENS は failed 状態 (storage proof は維持)。
-  let ensSettled:
-    | { ok: true; value: { name: string; resolverUrl: string } }
-    | { ok: false; reason: unknown };
-
-  let preflightError: string | undefined;
+  // Phase 2: Sepolia に戻す → ENS write。Sepolia switch / preflight が失敗したら
+  // ENS は failed (storage proof は維持)。
+  let ensProof: OnChainStep<EnsProof>;
   try {
     await ensureSepoliaChain(walletClient);
     await ensureSubnameAvailable(input.handle, input.parentName, owner);
-  } catch (err) {
-    preflightError = errorMessage(err);
-  }
-
-  if (preflightError) {
-    ensSettled = { ok: false, reason: preflightError };
-  } else {
-    ensSettled = await registerSubname(walletClient, {
+    const value = await registerSubname(walletClient, {
       handle: input.handle,
       owner,
-      textRecords: buildEnsTextRecords(attestation, storageData),
-    }).then(
-      (value) => ({ ok: true as const, value }),
-      (reason) => ({ ok: false as const, reason })
-    );
+      textRecords: buildEnsTextRecords(attestation, storageProof.data),
+    });
+    ensProof = { status: 'success', data: value };
+  } catch (err) {
+    ensProof = { status: 'failed', error: errorMessage(err) };
   }
-
-  const storageProof: OnChainStep<StorageProof> = storageData
-    ? storageError
-      ? { status: 'failed', error: storageError, data: storageData }
-      : { status: 'success', data: storageData }
-    : { status: 'failed', error: 'storage put returned no cid' };
-  const ensProof: OnChainStep<EnsProof> = ensSettled.ok
-    ? { status: 'success', data: ensSettled.value }
-    : { status: 'failed', error: errorMessage(ensSettled.reason) };
 
   return { attestation, storageProof, ensProof };
 }

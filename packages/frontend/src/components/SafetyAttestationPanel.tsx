@@ -4,6 +4,7 @@ import {
   type MisalignmentKind,
 } from '@gradiusweb3/shared/browser';
 import type { OnChainStep, TxStatus } from '../web3/types';
+import { parseZeroGRoot, zerogExplorerUrl } from '../web3/zerog-storage';
 
 const A = {
   bg: '#05080c',
@@ -36,16 +37,6 @@ interface Props {
   attestation: AgentSafetyAttestation;
   storageProof: OnChainStep<{ cid: string }>;
   ensProof: OnChainStep<{ name: string; resolverUrl: string }>;
-}
-
-/// 0G Storage explorer (Galileo testnet)。rootHash 部 (0x...) を末尾に貼るだけで
-/// アップロードされたファイルが取得できる。
-const ZEROG_EXPLORER_BASE = 'https://storagescan-galileo.0g.ai/';
-
-function zerogExplorerLink(cid: string): string | undefined {
-  if (!cid.startsWith('0g://')) return undefined;
-  const rootHash = cid.slice('0g://'.length);
-  return `${ZEROG_EXPLORER_BASE}tx/${rootHash}`;
 }
 
 function truncateHash(hash: string): string {
@@ -169,7 +160,7 @@ export function SafetyAttestationPanel({
           label="0G STORAGE"
           step={storageProof}
           subtitle={storageCid ?? 'attestation pending'}
-          href={storageCid ? zerogExplorerLink(storageCid) : undefined}
+          href={storageCid ? zerogExplorerUrl(storageCid) : undefined}
         />
         <ProofRow
           label="ENS"
@@ -315,12 +306,9 @@ function PipelineDiagram({
     success: A.green,
     failed: A.hot,
   };
-  // 0G STORAGE ノードに rootHash hover を出す。0g:// 形式なら短縮表示 + title で
-  // フル hash、それ以外 (sha256 fallback) はスキームを伝えるラベルにとどめる。
-  const isReal = storageCid?.startsWith('0g://');
-  const rootHash = isReal
-    ? (storageCid ?? '').slice('0g://'.length)
-    : undefined;
+  // 0G STORAGE ノードに rootHash hover を出す。real 0G upload なら短縮表示 +
+  // title で full hash、sha256 fallback はスキームを伝えるラベルにとどめる。
+  const rootHash = storageCid ? parseZeroGRoot(storageCid) : undefined;
   const storageNodeLabel = rootHash
     ? `0G ${truncateHash(rootHash)}`
     : '0G STORAGE';

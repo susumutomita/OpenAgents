@@ -14,6 +14,7 @@ import {
   getAllocation,
 } from '../game/runtime';
 import type { OnChainProof, OnChainStep, TxStatus } from '../web3/types';
+import { zerogExplorerUrl } from '../web3/zerog-storage';
 import { RadarDisplay } from './RadarDisplay';
 
 // Palette duplicated from App.tsx so this component stays self-contained.
@@ -476,8 +477,8 @@ function OnChainProofPanel({
           step={proof.storage}
           subtitle={proof.storage.data?.cid ?? 'cid pending'}
           href={
-            proof.storage.data?.cid?.startsWith('0g://')
-              ? `https://storagescan-galileo.0g.ai/tx/${proof.storage.data.cid.slice('0g://'.length)}`
+            proof.storage.data?.cid
+              ? zerogExplorerUrl(proof.storage.data.cid)
               : undefined
           }
         />
