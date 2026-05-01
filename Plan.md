@@ -221,3 +221,53 @@
 | 5 | 同 wallet なら同 subname を返す deterministic mode | chore/safety-followups | `deriveDeterministicHandle` (FNV-1a 32bit、4 桁 hex)。pre-flight `Registry.owner()` 衝突検出と両立 |
 | 6 | ENS write 直前の switchChain await + post-check | chore/safety-followups | `ensureSepoliaChain` を async 化し `walletClient.switchChain` を 1 回試行、失敗時 friendly error |
 | 7 | README Quick verification 表 + Sponsor integrations 更新 | chore/safety-followups | "Agent safety attestation" 行と "Demo seed" 行を表に追加、ENS 行に新 text record トリオを記載 |
+
+---
+
+### 0G Storage SDK 実統合 - 2026-05-01
+
+#### 目的
+
+`zerog-storage.ts` の SHA-256 stub を `@0gfoundation/0g-ts-sdk` の real put に差し替え、playLog と AgentSafetyAttestation の両方を 0G Galileo testnet に upload する。`0g://{rootHash}` URI を ENS text record と iNFT metadata に流し、judge が 0G storage explorer で実データを検証できる状態にする。0G Storage 賞 (Autonomous Agents / Swarms / iNFT トラック) を stub から real demo に格上げ。
+
+仕様書: [`docs/specs/2026-05-01-zerog-storage-real.md`](./docs/specs/2026-05-01-zerog-storage-real.md)
+
+メイン狙い prize: **0G Storage (Autonomous Agents / iNFT)** + **0G iNFT** (memory embed の客観証明)。
+
+#### 制約
+
+- ブランチ: `feat/zerog-storage-real` (main からスタック)。
+- パッケージ: `@0gfoundation/0g-ts-sdk`、indexer は公式 turbo (`indexer-storage-testnet-turbo.0g.ai`)。
+- 0G Galileo 正規 chain id は **16602** (live RPC で `eth_chainId = 0x40da` 確認済み)。既存コードの `16601` は誤り、修正対象。
+- chain switch UX: Sepolia → 0G Galileo (upload) → Sepolia (ENS) を `useSwitchChain` で順次。
+- フェイルセーフ: real put 失敗 → `sha256://{hex}` stub フォールバック + ENS write 継続。
+- TDD: zerog-storage.test.ts に real upload のラッパテスト (network skip 可)。
+- No Mock 維持。
+
+#### タスク (5 役割 parallel + integration)
+
+- [x] 仕様書 `docs/specs/2026-05-01-zerog-storage-real.md`
+- [ ] PM レビュー `-pm-review.md`
+- [ ] Designer 設計 `-design.md` (chain switch UX、PipelineDiagram の 0G ノード rootHash hover)
+- [ ] Developer 実装: SDK install + chain id 16601→16602 修正 + real upload + chain switch シーケンス + iNFT metadata 確認
+- [ ] QA レビュー `-qa.md` (chain spoofing / replay / SDK error / bundle size 観点)
+- [ ] User feedback `-user-feedback.md` (chain switch popup 多数の UX、testnet faucet 案内)
+- [ ] Integration: critical 修正反映、Plan.md 振り返り、ゲート全通過 → PR
+
+#### 検証手順
+
+1. `bun --filter @gradiusweb3/frontend test` で zerog-storage の wrapper テストが green
+2. `bun scripts/architecture-harness.ts --staged --fail-on=error` 通過
+3. `make before-commit` 通過 (lint / typecheck / test / build)
+4. `bun run dev` で実機: wallet を Sepolia + 0G Galileo testnet ETH 両方持つ状態でプレイ → game over → chain switch popup × 2 → upload → switch back → ENS write → AgentDashboard で `0g://{rootHash}` が PipelineDiagram に表示
+5. 0G storage explorer に rootHash を貼り付け attestation JSON が見える
+6. sepolia.app.ens.domains で `agent.safety.attestation` が `0g://...` 形式
+
+#### 進捗ログ
+
+- 2026-05-01 — `/feature` Phase 0-2 完了、SDK ドキュメント確認 (context7 + live RPC で chain id 16602 確認)、仕様書承認、ブランチ feat/zerog-storage-real 作成。
+
+#### Known Follow-ups (本機能発見)
+
+- 0G Storage SDK のブラウザバンドル化が困難な場合の dynamic import / wasm 代替検討。
+- 0G Storage download / merkle 検証機能 (今回 upload のみ)。
