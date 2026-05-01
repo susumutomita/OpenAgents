@@ -387,7 +387,7 @@ const CHAIN_LABELS: Record<number, string> = {
   84532: 'BASE_SEPOLIA',
   11155420: 'OP_SEPOLIA',
   421614: 'ARB_SEPOLIA',
-  16601: '0G_GALILEO',
+  16602: '0G_GALILEO',
 };
 
 function StatusBar() {

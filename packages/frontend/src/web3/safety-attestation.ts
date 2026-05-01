@@ -12,10 +12,11 @@ import {
   createPublicClient,
   namehash,
 } from 'viem';
-import { sepolia } from './chains';
+import { galileo, sepolia } from './chains';
 import { registerSubname } from './ens-register';
 import type { EnsProof, OnChainStep, StorageProof } from './types';
-import { putAttestation } from './zerog-storage';
+import { errorMessage } from './utils';
+import { buildZeroGSigner, putAttestation } from './zerog-storage';
 
 /// Sepolia の ENS Registry。NameWrapper とは別、namehash → owner address を引く。
 /// 値は ENS deployments registry の deterministic deploy アドレス。
@@ -34,23 +35,35 @@ const REGISTRY_OWNER_ABI = [
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-/// Sepolia 接続を assert する。前回 Web3 Wiring の振り返りで「switchChain 漏れ」が
-/// 発生しており、本機能の ENS 書込みも Sepolia 固定でないと別 chain に書く事故になる。
-/// 不一致の場合は wallet が対応していれば 1 度 switchChain を試行する。
-/// (viem WalletClient.chain は immutable なので switchChain 後の再参照は呼び出し側
-/// で wagmi の useWalletClient 再 render に任せる。本関数は switchChain が
-/// throw しなければ成功とみなす。)
-async function ensureSepoliaChain(walletClient: WalletClient): Promise<void> {
+/// 任意の chain id への switch を試行する共通ヘルパ。
+/// 既に同 chain ならば no-op。switchChain が throw した場合は friendly な
+/// 日本語メッセージで上位に伝播する (private key 等は露出させない)。
+async function ensureChain(
+  walletClient: WalletClient,
+  targetId: number,
+  label: string
+): Promise<void> {
   const chainId = walletClient.chain?.id;
-  if (chainId === sepolia.id) return;
+  if (chainId === targetId) return;
   try {
-    await walletClient.switchChain({ id: sepolia.id });
+    await walletClient.switchChain({ id: targetId });
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unknown';
     throw new Error(
-      `chain mismatch — Sepolia (${sepolia.id}) への切替に失敗しました (現在 ${chainId ?? 'unknown'}): ${detail}`
+      `chain mismatch — ${label} (${targetId}) への切替に失敗しました (現在 ${chainId ?? 'unknown'}): ${detail}`
     );
   }
+}
+
+/// Sepolia 接続を assert する。ENS write は Sepolia 以外で走るとアテステーション
+/// が別 chain に書かれる事故になるため、書込み直前で必ず通す。
+async function ensureSepoliaChain(walletClient: WalletClient): Promise<void> {
+  await ensureChain(walletClient, sepolia.id, 'Sepolia');
+}
+
+/// 0G Galileo 接続を assert する。0G Storage への put 直前のみ呼ぶ。
+async function ensureGalileoChain(walletClient: WalletClient): Promise<void> {
+  await ensureChain(walletClient, galileo.id, '0G Galileo');
 }
 
 /// pilot{4 桁 hex} の handle が「自分以外のオーナーに先取りされていない」ことを
@@ -133,11 +146,6 @@ export interface RunSafetyAttestationInput {
   parentName: string;
 }
 
-function errorMessage(reason: unknown): string {
-  if (reason instanceof Error) return reason.message;
-  return typeof reason === 'string' ? reason : 'unknown error';
-}
-
 /// orchestrator: deriveSafetyAttestation で score を計算し、
 /// 0G Storage put と ENS subname registration を Promise.allSettled で並列実行。
 /// どの一方が失敗しても score 計算とローカル表示は完走する (フェイルセーフ)。
@@ -155,17 +163,12 @@ export async function runSafetyAttestation(
   });
 
   if (!input.walletClient || !input.ownerAddress) {
-    // ウォレット未接続でも attestation 本体は返す。
-    let storageProof: OnChainStep<StorageProof>;
-    try {
-      const storage = await putAttestation(attestation);
-      storageProof = { status: 'success', data: storage };
-    } catch (err) {
-      storageProof = { status: 'failed', error: errorMessage(err) };
-    }
+    // ウォレット未接続でも attestation 本体は返す。signer も無いため
+    // sha256 stub にしか倒せない (それで 100% OK — 賞金提出には wallet 接続必須)。
+    const storage = await putAttestation(attestation);
     return {
       attestation,
-      storageProof,
+      storageProof: { status: 'success', data: { cid: storage.cid } },
       ensProof: { status: 'failed', error: 'wallet not connected' },
     };
   }
@@ -173,48 +176,47 @@ export async function runSafetyAttestation(
   const owner = input.ownerAddress;
   const walletClient = input.walletClient;
 
-  // Pre-flight: chain assertion (sync) と subname 衝突チェック (async)。
-  // どちらかが失敗しても storage put は走らせる (ローカル credential は得たい)。
-  let preflightError: string | undefined;
+  // Phase 1: 0G Galileo に切替えて real put を試行する。chain switch / signer
+  // 構築 / SDK 呼び出しいずれの失敗も sha256:// stub にフォールバックして
+  // ENS 経路は止めない (フェイルセーフ要件)。
+  // putAttestation は never throw 契約 (常に PutResult を返す) なので、外側
+  // try/catch は ensureGalileoChain / buildZeroGSigner の失敗のみを拾う。
+  let storageProof: OnChainStep<StorageProof>;
+  try {
+    await ensureGalileoChain(walletClient);
+    const signer = await buildZeroGSigner(walletClient);
+    const result = await putAttestation(attestation, signer);
+    storageProof = result.realUpload
+      ? { status: 'success', data: { cid: result.cid } }
+      : {
+          status: 'failed',
+          error: result.error ?? 'real upload skipped',
+          data: { cid: result.cid },
+        };
+  } catch (err) {
+    const fallback = await putAttestation(attestation);
+    storageProof = {
+      status: 'failed',
+      error: errorMessage(err),
+      data: { cid: fallback.cid },
+    };
+  }
+
+  // Phase 2: Sepolia に戻す → ENS write。Sepolia switch / preflight が失敗したら
+  // ENS は failed (storage proof は維持)。
+  let ensProof: OnChainStep<EnsProof>;
   try {
     await ensureSepoliaChain(walletClient);
     await ensureSubnameAvailable(input.handle, input.parentName, owner);
-  } catch (err) {
-    preflightError = errorMessage(err);
-  }
-
-  // 0G Storage の put は preflight と独立して走る (ENS 失敗でも CID は取りたい)。
-  const storageSettled = await putAttestation(attestation).then(
-    (value) => ({ ok: true as const, value }),
-    (reason) => ({ ok: false as const, reason })
-  );
-
-  // ENS write は (a) preflight 通過、(b) storage 結果が揃ってから走る。
-  // CID 値が定まる前に setText が呼ばれない直列を保証することで Front-running
-  // 経路 (CID = undefined のまま text record が書かれる) を避ける。
-  let ensSettled:
-    | { ok: true; value: { name: string; resolverUrl: string } }
-    | { ok: false; reason: unknown };
-  if (preflightError) {
-    ensSettled = { ok: false, reason: preflightError };
-  } else {
-    const storageData = storageSettled.ok ? storageSettled.value : undefined;
-    ensSettled = await registerSubname(walletClient, {
+    const value = await registerSubname(walletClient, {
       handle: input.handle,
       owner,
-      textRecords: buildEnsTextRecords(attestation, storageData),
-    }).then(
-      (value) => ({ ok: true as const, value }),
-      (reason) => ({ ok: false as const, reason })
-    );
+      textRecords: buildEnsTextRecords(attestation, storageProof.data),
+    });
+    ensProof = { status: 'success', data: value };
+  } catch (err) {
+    ensProof = { status: 'failed', error: errorMessage(err) };
   }
-
-  const storageProof: OnChainStep<StorageProof> = storageSettled.ok
-    ? { status: 'success', data: storageSettled.value }
-    : { status: 'failed', error: errorMessage(storageSettled.reason) };
-  const ensProof: OnChainStep<EnsProof> = ensSettled.ok
-    ? { status: 'success', data: ensSettled.value }
-    : { status: 'failed', error: errorMessage(ensSettled.reason) };
 
   return { attestation, storageProof, ensProof };
 }

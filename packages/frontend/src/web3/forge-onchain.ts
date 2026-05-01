@@ -8,16 +8,16 @@ import {
   type StorageProof,
   idleProof,
 } from './types';
+import { errorMessage } from './utils';
 import { mintINft } from './zerog-mint';
-import { putPlayLog } from './zerog-storage';
+import {
+  type ZeroGSigner,
+  buildZeroGSigner,
+  putPlayLog,
+} from './zerog-storage';
 
 function toHexBytes(maybeHex: string): Hex {
   return (maybeHex.startsWith('0x') ? maybeHex : `0x${maybeHex}`) as Hex;
-}
-
-function errorMessage(reason: unknown): string {
-  if (reason instanceof Error) return reason.message;
-  return typeof reason === 'string' ? reason : 'unknown error';
 }
 
 /// Pure aggregator: takes the resolved/rejected branches of the on-chain
@@ -74,7 +74,14 @@ export async function runOnChainForge(
   const playLogHash = toHexBytes(draft.agent.birthHash);
 
   const storageThenMint = (async () => {
-    const storage = await putPlayLog(draft.playLog);
+    // 0G Storage に playLog を real put。signer 構築に失敗したら sha256 fallback。
+    let signer: ZeroGSigner | undefined;
+    try {
+      signer = await buildZeroGSigner(walletClient);
+    } catch {
+      signer = undefined;
+    }
+    const storage = await putPlayLog(draft.playLog, signer);
     const mint = await mintINft(walletClient, {
       ensName: draft.agent.ensName,
       playLogHash,
