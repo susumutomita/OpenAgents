@@ -475,6 +475,11 @@ function OnChainProofPanel({
           label="0G STORAGE"
           step={proof.storage}
           subtitle={proof.storage.data?.cid ?? 'cid pending'}
+          href={
+            proof.storage.data?.cid?.startsWith('0g://')
+              ? `https://storagescan-galileo.0g.ai/tx/${proof.storage.data.cid.slice('0g://'.length)}`
+              : undefined
+          }
         />
         <ProofRow
           label="ENS"

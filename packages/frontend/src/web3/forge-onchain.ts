@@ -9,7 +9,7 @@ import {
   idleProof,
 } from './types';
 import { mintINft } from './zerog-mint';
-import { putPlayLog } from './zerog-storage';
+import { type ZeroGSigner, putPlayLog } from './zerog-storage';
 
 function toHexBytes(maybeHex: string): Hex {
   return (maybeHex.startsWith('0x') ? maybeHex : `0x${maybeHex}`) as Hex;
@@ -74,7 +74,27 @@ export async function runOnChainForge(
   const playLogHash = toHexBytes(draft.agent.birthHash);
 
   const storageThenMint = (async () => {
-    const storage = await putPlayLog(draft.playLog);
+    // 0G Storage に playLog を real put する。viem WalletClient → ethers Signer
+    // 変換は dynamic import で safety-attestation 側と同じ構造を採る。失敗時は
+    // putPlayLog 内部で sha256:// fallback に倒れ、`storage.cid` には何かしら
+    // CID が必ず入る。iNFT mint 側はスキームを問わず文字列として記録する。
+    let signer: ZeroGSigner | undefined;
+    try {
+      const ethers = await import('ethers');
+      const provider = new ethers.BrowserProvider(
+        walletClient.transport as unknown as ConstructorParameters<
+          typeof ethers.BrowserProvider
+        >[0]
+      );
+      const account = walletClient.account;
+      signer = (await provider.getSigner(
+        account?.address
+      )) as unknown as ZeroGSigner;
+    } catch {
+      // signer 構築失敗 → sha256 fallback path (signer 未指定で put)
+      signer = undefined;
+    }
+    const storage = await putPlayLog(draft.playLog, signer);
     const mint = await mintINft(walletClient, {
       ensName: draft.agent.ensName,
       playLogHash,

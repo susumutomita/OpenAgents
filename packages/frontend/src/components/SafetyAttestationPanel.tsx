@@ -38,12 +38,28 @@ interface Props {
   ensProof: OnChainStep<{ name: string; resolverUrl: string }>;
 }
 
+/// 0G Storage explorer (Galileo testnet)。rootHash 部 (0x...) を末尾に貼るだけで
+/// アップロードされたファイルが取得できる。
+const ZEROG_EXPLORER_BASE = 'https://storagescan-galileo.0g.ai/';
+
+function zerogExplorerLink(cid: string): string | undefined {
+  if (!cid.startsWith('0g://')) return undefined;
+  const rootHash = cid.slice('0g://'.length);
+  return `${ZEROG_EXPLORER_BASE}tx/${rootHash}`;
+}
+
+function truncateHash(hash: string): string {
+  if (hash.length <= 14) return hash;
+  return `${hash.slice(0, 8)}…${hash.slice(-4)}`;
+}
+
 export function SafetyAttestationPanel({
   attestation,
   storageProof,
   ensProof,
 }: Props) {
   const detected = countByKind(attestation.encounters.map((e) => e.kind));
+  const storageCid = storageProof.data?.cid;
   return (
     <section
       className="panel"
@@ -69,6 +85,7 @@ export function SafetyAttestationPanel({
       <PipelineDiagram
         storageStatus={storageProof.status}
         ensStatus={ensProof.status}
+        storageCid={storageCid}
       />
 
       <BreakdownLedger
@@ -151,7 +168,8 @@ export function SafetyAttestationPanel({
         <ProofRow
           label="0G STORAGE"
           step={storageProof}
-          subtitle={storageProof.data?.cid ?? 'attestation pending'}
+          subtitle={storageCid ?? 'attestation pending'}
+          href={storageCid ? zerogExplorerLink(storageCid) : undefined}
         />
         <ProofRow
           label="ENS"
@@ -285,9 +303,11 @@ function LedgerRow({
 function PipelineDiagram({
   storageStatus,
   ensStatus,
+  storageCid,
 }: {
   storageStatus: TxStatus;
   ensStatus: TxStatus;
+  storageCid?: string;
 }) {
   const STAGE_COLOR: Record<TxStatus, string> = {
     idle: A.mute,
@@ -295,6 +315,20 @@ function PipelineDiagram({
     success: A.green,
     failed: A.hot,
   };
+  // 0G STORAGE ノードに rootHash hover を出す。0g:// 形式なら短縮表示 + title で
+  // フル hash、それ以外 (sha256 fallback) はスキームを伝えるラベルにとどめる。
+  const isReal = storageCid?.startsWith('0g://');
+  const rootHash = isReal
+    ? (storageCid ?? '').slice('0g://'.length)
+    : undefined;
+  const storageNodeLabel = rootHash
+    ? `0G ${truncateHash(rootHash)}`
+    : '0G STORAGE';
+  const storageNodeTitle = rootHash
+    ? `0G Storage rootHash: ${rootHash}`
+    : storageCid
+      ? `Storage CID: ${storageCid}`
+      : '0G Storage put pending';
   return (
     <div
       style={{
@@ -318,8 +352,11 @@ function PipelineDiagram({
       <span style={{ color: A.acid }}>──▸</span>
       <span style={{ color: A.ink }}>SAFETY SCORE</span>
       <span style={{ color: STAGE_COLOR[storageStatus] }}>──▸</span>
-      <span style={{ color: STAGE_COLOR[storageStatus], fontWeight: 700 }}>
-        0G STORAGE
+      <span
+        style={{ color: STAGE_COLOR[storageStatus], fontWeight: 700 }}
+        title={storageNodeTitle}
+      >
+        {storageNodeLabel}
       </span>
       <span style={{ color: STAGE_COLOR[ensStatus] }}>──▸</span>
       <span style={{ color: STAGE_COLOR[ensStatus], fontWeight: 700 }}>

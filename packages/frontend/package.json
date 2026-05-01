@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@0gfoundation/0g-ts-sdk": "^1.2.8",
     "@gradiusweb3/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.7",
     "react": "^19.0.0",

@@ -266,8 +266,22 @@
 #### 進捗ログ
 
 - 2026-05-01 — `/feature` Phase 0-2 完了、SDK ドキュメント確認 (context7 + live RPC で chain id 16602 確認)、仕様書承認、ブランチ feat/zerog-storage-real 作成。
+- 2026-05-01 — Phase 3 Issue 5 件作成 (#31 PM / #32 Designer / #33 Developer / #34 QA / #35 User)。
+- 2026-05-01 — Phase 4 5 役割並列実装完了。Developer は `@0gfoundation/0g-ts-sdk@1.2.8` を install 成功 (`@0glabs/...` フォールバック不要)、SDK は ethers v6 `Signer` を要求するため orchestrator で `BrowserProvider` 経由で viem→ethers 変換、Vite bundle は dynamic import で SDK 系 4 chunk に分離されメイン bundle 影響 +3KB のみ。chain id 修正 (16601→16602)、README 33 行目を real upload に書き換え、PipelineDiagram の 0G ノードに rootHash hover 追加。
+- 2026-05-01 — Phase 5 統合: README 207 行目の Sponsor integrations 0G 行を「follow-up」表記から「real upload + SHA-256 fallback + 0g:// URI pin」に書き換え。QA critical のうち #1 (chain id 16601 残存) は「16601 を言及しているのは migration コメント 1 行のみ」で false positive として確認、他の 3 件は follow-up 化。
+
+#### 振り返り
+
+- **問題**: 既存コードの 0G Galileo chain id が `16601` で hard-coded されていた。live RPC を叩いたら `0x40da` = 16602 が返り、ドキュメントとも一致。bundle 内に 16601 が複数箇所散らばっていた (chains.ts / wagmi.ts / App.tsx / foundry.toml)。仮にこのまま real upload を試みると wagmi が「未知 chain」扱いし switchChain がサイレントに失敗していた可能性大。
+- **根本原因**: Web3 wiring PR (2026-04-27) で 0G Galileo を chain register したときに、ドキュメントの古いバージョンか試作時の値を信じて 16601 を入れてしまった。実 RPC で確認するステップが手順書に無かった。
+- **予防策**: 仕様書テンプレに「外部 chain / endpoint / contract address は live RPC または公式 explorer で eth_chainId / ABI を直接読んで verify する」を追加。Phase 1 ヒアリングでも env / chain 値は verify 経路を必ず確認する。
+- **学び**: 0G SDK は ethers v6 を要求する一方で、本プロジェクトは viem + wagmi で構築。Developer agent が dynamic import で BrowserProvider を遅延 load し、bundle 影響を最小化した。SDK 異種統合時の defensive な取り回しとして再利用可能。
 
 #### Known Follow-ups (本機能発見)
 
-- 0G Storage SDK のブラウザバンドル化が困難な場合の dynamic import / wasm 代替検討。
+- **merkleTree 計算が main thread block するリスク**: 大きな playLog (>1MB) で 0G SDK の Merkle 計算が UI を凍結。Web Worker に逃がす対応 (QA Critical #3、follow-up)。
+- **env var URL injection 経路**: `VITE_ZEROG_INDEXER` / `VITE_ZEROG_RPC` がビルド時 .env から取り込まれる。攻撃者がビルドパイプラインに侵入できれば任意 URL に指せる。CSP allowlist の追加検討 (QA Critical #4、follow-up)。
+- **chain switch popup 6 連発の集約**: User Persona 共通の指摘。EIP-5792 multicall や 0G upload を Sepolia 上で代理実行する仕組み (今回未対応、follow-up)。
+- **`.env.example` の編集が permission で禁止**されているため `VITE_ZEROG_INDEXER` / `VITE_ZEROG_RPC` の追記は人間に依頼。コードのデフォルト値があるので動作には支障なし。
 - 0G Storage download / merkle 検証機能 (今回 upload のみ)。
+- 0G Storage SDK の TypeScript 型定義に一部 unknown が残る (orchestrator 側で as 変換、follow-up で SDK 側に PR 検討)。
