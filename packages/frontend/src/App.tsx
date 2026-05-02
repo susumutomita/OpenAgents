@@ -204,7 +204,12 @@ export function App() {
   const parentName = DEFAULT_PARENT_NAME;
   const arcadeRef = useRef<HTMLDivElement | null>(null);
   const { address: ownerAddress } = useAccount();
-  const { data: walletClient } = useWalletClient();
+  // assertChainId: false — ウォレットが wagmi config 外の chain (mainnet 等) に
+  // いても walletClient を返す。ENS / Uniswap / 0G mint は writeContract 側で
+  // chain を明示しているので、viem が必要に応じて wallet_switchEthereumChain を
+  // 走らせる。default のままだと ConnectorChainMismatchError で data: undefined に
+  // なり、接続済なのに「wallet not connected」と表示される。
+  const { data: walletClient } = useWalletClient({ assertChainId: false });
   // wallet 未接続なら random、接続済なら deterministic。後から接続された場合に
   // 一度 deterministic に切り替わるが、disconnect で random に戻すと混乱するので
   // 一度 deterministic になったら固定する。
