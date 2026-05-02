@@ -847,8 +847,9 @@ export function step(rt: Runtime, input: InputState) {
     );
   });
 
-  // Player damage
-  if (rt.player.iframes <= 0) {
+  // Enemy bullets — instant kill regardless of iframes (Gradius rule: bullet = death,
+  // same as walls). Death explosion is staged by the rt.player.hp <= 0 branch below.
+  if (rt.dyingT <= 0 && rt.player.hp > 0) {
     const hit = (hx: number, hy: number, hr: number) => {
       const dx = rt.player.x + 8 - hx;
       const dy = rt.player.y + 5 - hy;
@@ -856,10 +857,32 @@ export function step(rt: Runtime, input: InputState) {
     };
     for (const b of rt.enemyBullets) {
       if (hit(b.x, b.y, 4)) {
-        rt.player.hp -= 1;
-        rt.events.push({ kind: 'hit', t: elapsedMs(rt), damage: 1 });
+        rt.player.hp = 0;
+        rt.events.push({ kind: 'hit', t: elapsedMs(rt), damage: 99 });
+        break;
+      }
+    }
+  }
+
+  // Enemy ship collision — iframe-gated chip damage (still survivable).
+  if (rt.player.iframes <= 0 && rt.dyingT <= 0 && rt.player.hp > 0) {
+    for (const e of rt.enemies) {
+      const ew = e.type === 'moai' ? 24 : 12;
+      const eh = e.type === 'moai' ? 28 : 10;
+      if (
+        rt.player.x + 16 > e.x &&
+        rt.player.x < e.x + ew &&
+        rt.player.y + 10 > e.y &&
+        rt.player.y < e.y + eh
+      ) {
+        rt.player.hp -= e.type === 'moai' ? 2 : 1;
         rt.player.iframes = 60;
         rt.flashT = 25;
+        rt.events.push({
+          kind: 'hit',
+          t: elapsedMs(rt),
+          damage: e.type === 'moai' ? 2 : 1,
+        });
         const cx = rt.player.x + 8;
         const cy = rt.player.y + 5;
         spawnBurst(rt, cx, cy, '#ff5252', 50);
@@ -868,35 +891,6 @@ export function step(rt: Runtime, input: InputState) {
         pushToast(rt, `HULL ${rt.player.hp}`, PAL.warn);
         playSfx('hit');
         break;
-      }
-    }
-    if (rt.player.iframes <= 0) {
-      for (const e of rt.enemies) {
-        const ew = e.type === 'moai' ? 24 : 12;
-        const eh = e.type === 'moai' ? 28 : 10;
-        if (
-          rt.player.x + 16 > e.x &&
-          rt.player.x < e.x + ew &&
-          rt.player.y + 10 > e.y &&
-          rt.player.y < e.y + eh
-        ) {
-          rt.player.hp -= e.type === 'moai' ? 2 : 1;
-          rt.player.iframes = 60;
-          rt.flashT = 25;
-          rt.events.push({
-            kind: 'hit',
-            t: elapsedMs(rt),
-            damage: e.type === 'moai' ? 2 : 1,
-          });
-          const cx = rt.player.x + 8;
-          const cy = rt.player.y + 5;
-          spawnBurst(rt, cx, cy, '#ff5252', 50);
-          spawnBurst(rt, cx, cy, '#ffe66d', 25);
-          spawnBurst(rt, cx, cy, '#ffffff', 12);
-          pushToast(rt, `HULL ${rt.player.hp}`, PAL.warn);
-          playSfx('hit');
-          break;
-        }
       }
     }
   }
