@@ -864,8 +864,8 @@ export function step(rt: Runtime, input: InputState) {
     }
   }
 
-  // Enemy ship collision — iframe-gated chip damage (still survivable).
-  if (rt.player.iframes <= 0 && rt.dyingT <= 0 && rt.player.hp > 0) {
+  // Enemy ship contact — instant kill (Gradius rule: 触れたら死、壁・弾と同じ挙動).
+  if (rt.dyingT <= 0 && rt.player.hp > 0) {
     for (const e of rt.enemies) {
       const ew = e.type === 'moai' ? 24 : 12;
       const eh = e.type === 'moai' ? 28 : 10;
@@ -875,21 +875,8 @@ export function step(rt: Runtime, input: InputState) {
         rt.player.y + 10 > e.y &&
         rt.player.y < e.y + eh
       ) {
-        rt.player.hp -= e.type === 'moai' ? 2 : 1;
-        rt.player.iframes = 60;
-        rt.flashT = 25;
-        rt.events.push({
-          kind: 'hit',
-          t: elapsedMs(rt),
-          damage: e.type === 'moai' ? 2 : 1,
-        });
-        const cx = rt.player.x + 8;
-        const cy = rt.player.y + 5;
-        spawnBurst(rt, cx, cy, '#ff5252', 50);
-        spawnBurst(rt, cx, cy, '#ffe66d', 25);
-        spawnBurst(rt, cx, cy, '#ffffff', 12);
-        pushToast(rt, `HULL ${rt.player.hp}`, PAL.warn);
-        playSfx('hit');
+        rt.player.hp = 0;
+        rt.events.push({ kind: 'hit', t: elapsedMs(rt), damage: 99 });
         break;
       }
     }
