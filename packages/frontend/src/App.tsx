@@ -16,6 +16,7 @@ import {
 } from 'react';
 import { useAccount, useChainId, useWalletClient } from 'wagmi';
 import { AgentDashboard } from './components/AgentDashboard';
+import { AgentLoopPanel } from './components/AgentLoopPanel';
 import { BirthArcade } from './components/BirthArcade';
 import { ConnectButton } from './components/ConnectButton';
 import { Fighter } from './components/Fighter';
@@ -363,6 +364,24 @@ export function App() {
           onFirstSwap={handleFirstSwap}
           swapping={swapping}
         />
+      ) : null}
+      {birth ? (
+        <section style={S.section}>
+          <SectionHead
+            num="§ 08 / AGENT_LOOP"
+            title="Local Claude Code as the thinking head."
+            right="HANDOFF"
+          />
+          <div style={{ padding: '24px 28px 40px' }}>
+            <AgentLoopPanel
+              birth={birth}
+              proof={proof}
+              walletAddress={ownerAddress}
+              onApproveSwap={handleFirstSwap}
+              swapping={swapping}
+            />
+          </div>
+        </section>
       ) : null}
       <CTASection onPlay={jumpToArcade} />
       <FooterBar />

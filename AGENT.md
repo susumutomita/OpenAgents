@@ -46,3 +46,28 @@ Suggested Hermes / Claude Code loop
 
 Implementation note
 - The repository already contains testnet-aware chain config. New write paths must call the shared guard utility in packages/frontend/src/web3/utils.ts.
+
+Agent loop handoff (one cycle)
+- The deployed UI does not run an LLM. It hands off to whatever agent runtime
+  is reading this file (Claude Code locally is the default).
+- Slash command spec: .claude/commands/agent-loop.md.
+- JSON contract: packages/shared/src/agent-loop.ts (AgentLoopInput → AgentLoopTrace,
+  schemaVersion 1).
+- Flow: browser copies AgentLoopInput JSON to clipboard → user runs
+  /agent-loop → trace JSON returned to clipboard → user pastes into the
+  "Agent loop" panel in the browser → UI validates and gates the
+  "Approve & Sign" button on the budget envelope below.
+
+Budget envelope (HARD limits, non-negotiable)
+- Per-action ETH ceiling: 0.0001 (matches executeFirstSwap's hardcoded amount
+  in packages/frontend/src/web3/uniswap-swap.ts).
+- Allowed PaperTradeAction kinds for the demo: "swap" and "hold". Anything
+  else (e.g. "rebalance") is refused at validateActionAgainstBudget before
+  the UI ever offers a sign button.
+- Allowed chain ids: Sepolia (11155111) and 0G Galileo (16602). Mirrors
+  SUPPORTED_TESTNET_CHAIN_IDS in packages/frontend/src/web3/utils.ts.
+- The agent never weakens the envelope to make an action fit. If the desired
+  trade would exceed the cap, emit a "hold" action with a reason instead.
+- The agent never asks the user for a private key, seed phrase, or signs
+  anything itself. Real signing happens in the browser MetaMask via the
+  existing forge swap path. The agent produces intent only.
