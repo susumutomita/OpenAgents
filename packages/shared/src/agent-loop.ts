@@ -110,20 +110,7 @@ function requireString(
 ): string {
   const v = source[key];
   if (typeof v !== 'string' || v.length === 0) {
-    throw new Error(`${context}: "${key}" は非空 string が必要です`);
-  }
-  return v;
-}
-
-function optionalString(
-  source: Record<string, unknown>,
-  key: string,
-  context: string
-): string | undefined {
-  const v = source[key];
-  if (v === undefined) return undefined;
-  if (typeof v !== 'string') {
-    throw new Error(`${context}: "${key}" は string が必要です`);
+    throw new Error(`${context}: "${key}" must be a non-empty string`);
   }
   return v;
 }
@@ -135,7 +122,7 @@ function requireNumber(
 ): number {
   const v = source[key];
   if (typeof v !== 'number' || Number.isNaN(v)) {
-    throw new Error(`${context}: "${key}" は数値が必要です`);
+    throw new Error(`${context}: "${key}" must be a number`);
   }
   return v;
 }
@@ -145,7 +132,7 @@ function parsePaperTradeAction(
   context: string
 ): PaperTradeAction {
   if (!isRecord(value)) {
-    throw new Error(`${context}: action は object が必要です`);
+    throw new Error(`${context}: action must be an object`);
   }
   const kind = requireString(value, 'kind', `${context}.action`);
   if (kind === 'swap') {
@@ -167,13 +154,13 @@ function parsePaperTradeAction(
     const rawTargets = value.targets;
     if (!Array.isArray(rawTargets) || rawTargets.length === 0) {
       throw new Error(
-        `${context}.action.rebalance: targets は非空 array が必要です`
+        `${context}.action.rebalance: "targets" must be a non-empty array`
       );
     }
     const targets = rawTargets.map((entry, index) => {
       if (!isRecord(entry)) {
         throw new Error(
-          `${context}.action.rebalance.targets[${index}]: object が必要です`
+          `${context}.action.rebalance.targets[${index}]: must be an object`
         );
       }
       return {
@@ -195,7 +182,7 @@ function parsePaperTradeAction(
       reason: requireString(value, 'reason', `${context}.action.rebalance`),
     };
   }
-  throw new Error(`${context}.action: 未知の kind "${kind}"`);
+  throw new Error(`${context}.action: unknown kind "${kind}"`);
 }
 
 /// Throwing parser. Use when the caller already wraps the boundary in
@@ -203,12 +190,12 @@ function parsePaperTradeAction(
 export function parseAgentLoopTrace(value: unknown): AgentLoopTrace {
   const context = 'AgentLoopTrace';
   if (!isRecord(value)) {
-    throw new Error(`${context}: object が必要です`);
+    throw new Error(`${context}: must be an object`);
   }
   const schemaVersion = value.schemaVersion;
   if (schemaVersion !== AGENT_LOOP_SCHEMA_VERSION) {
     throw new Error(
-      `${context}: schemaVersion が ${AGENT_LOOP_SCHEMA_VERSION} ではありません (受信 ${String(
+      `${context}: schemaVersion is not ${AGENT_LOOP_SCHEMA_VERSION} (received ${String(
         schemaVersion
       )})`
     );
@@ -216,16 +203,16 @@ export function parseAgentLoopTrace(value: unknown): AgentLoopTrace {
   const generatedBy = value.generatedBy;
   if (generatedBy !== 'claude-code' && generatedBy !== 'simulator') {
     throw new Error(
-      `${context}: generatedBy は "claude-code" / "simulator" のいずれか`
+      `${context}: generatedBy must be "claude-code" or "simulator"`
     );
   }
   const rawPlan = value.plan;
   if (!Array.isArray(rawPlan) || rawPlan.length === 0) {
-    throw new Error(`${context}: plan は非空 string array が必要です`);
+    throw new Error(`${context}: plan must be a non-empty array of strings`);
   }
   const plan = rawPlan.map((entry, index) => {
     if (typeof entry !== 'string' || entry.length === 0) {
-      throw new Error(`${context}.plan[${index}]: 非空 string が必要です`);
+      throw new Error(`${context}.plan[${index}]: must be a non-empty string`);
     }
     return entry;
   });
@@ -320,9 +307,9 @@ export function validateActionAgainstBudget(
   if (!budget.allowedActions.includes(action.kind)) {
     return {
       ok: false,
-      reason: `action.kind="${action.kind}" は budget.allowedActions=${JSON.stringify(
+      reason: `action.kind="${action.kind}" is not in budget.allowedActions=${JSON.stringify(
         budget.allowedActions
-      )} に含まれません`,
+      )}`,
     };
   }
   if (action.kind === 'swap') {
@@ -332,7 +319,7 @@ export function validateActionAgainstBudget(
     } catch (caught) {
       return {
         ok: false,
-        reason: `swap.amount="${action.amount}" を decimal として読めませんでした (${
+        reason: `swap.amount="${action.amount}" could not be parsed as a decimal (${
           caught instanceof Error ? caught.message : String(caught)
         })`,
       };
@@ -340,7 +327,7 @@ export function validateActionAgainstBudget(
     if (cmp > 0) {
       return {
         ok: false,
-        reason: `swap.amount=${action.amount} ETH が budget.maxSwapEth=${budget.maxSwapEth} ETH を超えています`,
+        reason: `swap.amount=${action.amount} ETH exceeds budget.maxSwapEth=${budget.maxSwapEth} ETH`,
       };
     }
   }

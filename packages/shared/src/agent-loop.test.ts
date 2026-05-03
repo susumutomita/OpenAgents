@@ -190,7 +190,7 @@ describe('parseAgentLoopTrace - Claude Code が貼った JSON を validate す�
         ...SAMPLE_TRACE,
         action: { kind: 'liquidate-all', reason: 'sus' },
       })
-    ).toThrow('未知の kind');
+    ).toThrow('unknown kind');
   });
 
   it('generatedBy が claude-code / simulator 以外は拒否する', () => {
