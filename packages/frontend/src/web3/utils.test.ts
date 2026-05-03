@@ -26,23 +26,58 @@ describe('testnet guard - オンチェーン書き込みは testnet のみ許可
   });
 });
 
-describe('executeFirstSwap - testnet 以外では write を開始しない', () => {
-  it('mainnet 相当の chainId では swap 前に拒否する', async () => {
+describe('executeFirstSwap - mainnet 始発でも switch を試み、reject されたら止める', () => {
+  it('mainnet 上で wallet が switch を拒否すると writeContract に到達せず chain mismatch で止まる', async () => {
+    const switchAttempts: Array<{ id: number }> = [];
     const walletClient = {
       account: {
         address: '0x000000000000000000000000000000000000dEaD',
       },
       getChainId: async () => 1,
-      switchChain: async () => {
-        throw new Error('switchChain must not be called for mainnet');
+      switchChain: async (args: { id: number }) => {
+        switchAttempts.push(args);
+        // ユーザーが MetaMask の switch ダイアログで Reject を押した相当
+        throw new Error('user rejected the request');
       },
       writeContract: async () => {
-        throw new Error('writeContract must not be called for mainnet');
+        throw new Error(
+          'writeContract must not be called when chain switch was rejected'
+        );
       },
     } as unknown as WalletClient;
 
     await expect(executeFirstSwap(walletClient)).rejects.toThrow(
-      'testnet only'
+      /chain mismatch.*Sepolia/i
     );
+    // user reject 経路でも switch は必ず 1 回試される (mainnet 始発の人を救う唯一の経路)
+    expect(switchAttempts).toEqual([{ id: sepolia.id }]);
+  });
+
+  it('mainnet 始発でも switch が成功すれば writeContract まで届く', async () => {
+    const switchAttempts: Array<{ id: number }> = [];
+    let currentChainId = 1;
+    let writeContractCalls = 0;
+    const walletClient = {
+      account: {
+        address: '0x000000000000000000000000000000000000dEaD',
+      },
+      getChainId: async () => currentChainId,
+      switchChain: async (args: { id: number }) => {
+        switchAttempts.push(args);
+        currentChainId = args.id;
+      },
+      writeContract: async () => {
+        writeContractCalls += 1;
+        // 実際に tx を送るところまでは行かないので、ここで意図的に止める
+        throw new Error('mock: tx send not implemented in test');
+      },
+    } as unknown as WalletClient;
+
+    await expect(executeFirstSwap(walletClient)).rejects.toThrow(
+      'mock: tx send not implemented in test'
+    );
+    expect(switchAttempts).toEqual([{ id: sepolia.id }]);
+    expect(writeContractCalls).toBe(1);
+    expect(currentChainId).toBe(sepolia.id);
   });
 });
