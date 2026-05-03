@@ -23,6 +23,7 @@ import {
 } from '../game/runtime';
 import { prewarmSfx } from '../game/sfx';
 import { VIC_KEY, VIC_VIPER, drawSprite } from '../game/sprites';
+import { CommitToast, type CommitToastQueueItem } from './CommitToast';
 import { AgentHandleLabel } from './HUD';
 import {
   MisalignmentToast,
@@ -83,6 +84,18 @@ export function BirthArcade({
   const onConsumed = useCallback(() => {
     currentToastIdRef.current = null;
     setCurrentToast(null);
+  }, []);
+
+  // 全キル発火の右下サポート toast (capability commit)。
+  // MisalignmentToast (4 種失敗モードの強い警告) と並走するが、こちらは
+  // 毎キル発火するので必ず何か出ている状態になる。両方同時に出るときは
+  // CommitToast を 1 段上 (stack="raised") に積んで重ならないようにする。
+  const [currentCommitToast, setCurrentCommitToast] =
+    useState<CommitToastQueueItem | null>(null);
+  const currentCommitToastIdRef = useRef<number | null>(null);
+  const onCommitConsumed = useCallback(() => {
+    currentCommitToastIdRef.current = null;
+    setCurrentCommitToast(null);
   }, []);
 
   useEffect(() => {
@@ -174,6 +187,17 @@ export function BirthArcade({
             if (next) {
               currentToastIdRef.current = next.id;
               setCurrentToast({ id: next.id, kind: next.kind });
+            }
+          }
+          // capability commit toast: 全キル発火の右下サポート。同上の shift パターン。
+          if (!currentCommitToastIdRef.current) {
+            const next = runtimeRef.current.commitToasts.shift();
+            if (next) {
+              currentCommitToastIdRef.current = next.id;
+              setCurrentCommitToast({
+                id: next.id,
+                capability: next.capability,
+              });
             }
           }
           if (runtimeRef.current.finished) {
@@ -268,6 +292,13 @@ export function BirthArcade({
           ) : null}
           {phase === 'play' ? (
             <MisalignmentToast current={currentToast} onConsumed={onConsumed} />
+          ) : null}
+          {phase === 'play' ? (
+            <CommitToast
+              current={currentCommitToast}
+              onConsumed={onCommitConsumed}
+              stack={currentToast ? 'raised' : 'base'}
+            />
           ) : null}
           {phase === 'idle' ? (
             <button

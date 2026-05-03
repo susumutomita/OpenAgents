@@ -72,7 +72,7 @@ export const ARCHETYPE_GLYPH: Record<Archetype, string> = {
   aggressive: 'RISK',
 };
 
-type Capability = Exclude<Capsule, 'double'>;
+export type Capability = Exclude<Capsule, 'double'>;
 
 export const CAPABILITY_ORDER: Capability[] = [
   'shield',
@@ -317,6 +317,17 @@ export interface MisalignmentToastEvent {
   spawnAt: number;
 }
 
+/// 全キル発火の commit トースト。MisalignmentToast が「踏み抜くと事故る
+/// 4 種失敗モード」の警告に専念しているのに対して、こちらは毎キルに対して
+/// 「いま何の module を policy にコミットしたのか」「装備しないとどう困るのか」
+/// を右下にサポート表示する。プレイヤーが画面の流れる文字 (+180 LEV 等) を
+/// 一瞬では読めない問題への補助情報。
+export interface CommitToastEvent {
+  id: number;
+  capability: Capability;
+  spawnAt: number;
+}
+
 interface MoaiBoss {
   type: 'moai';
   id: string;
@@ -387,6 +398,10 @@ export interface Runtime {
   misalignmentToasts: MisalignmentToastEvent[];
   /// MisalignmentToastEvent.id を採番するカウンタ。
   misalignmentCounter: number;
+  /// 全キル発火の右下 commit toast キュー。React 側で shift して表示。
+  commitToasts: CommitToastEvent[];
+  /// CommitToastEvent.id を採番するカウンタ。
+  commitCounter: number;
   stars: Star[];
   terrain: Terrain;
   events: PlayEvent[];
@@ -434,6 +449,8 @@ export function createRuntime(
     toasts: [],
     misalignmentToasts: [],
     misalignmentCounter: 0,
+    commitToasts: [],
+    commitCounter: 0,
     stars: makeStars(),
     terrain: makeTerrain(),
     events: [],
@@ -752,6 +769,14 @@ export function step(rt: Runtime, input: InputState) {
                 spawnAt: rt.t,
               });
             }
+            // 全キル毎に commit toast を発火。React 側が右下にサポート表示し、
+            // 「いまコミットした module + 装備しないとどう事故るか」を見せる。
+            rt.commitCounter += 1;
+            rt.commitToasts.push({
+              id: rt.commitCounter,
+              capability: e.capability,
+              spawnAt: rt.t,
+            });
             spawnBurst(rt, e.x + 4, e.y + 4, e.flashColor, 14);
             rt.scorePops.push({
               x: e.x + 4,
