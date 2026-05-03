@@ -67,11 +67,18 @@ Sources: [`web3/utils.ts`](./packages/frontend/src/web3/utils.ts), [`lib/wagmi.t
 
 ## Local agent loop
 
-After the forge runs, the dashboard hands off to a local Claude Code instance. The deployed app holds zero LLM cost and zero private keys.
+After the forge runs, the dashboard hands off to a **Claude Code skill** that you install once and reuse forever. The deployed app holds zero LLM cost and zero private keys.
+
+```bash
+# one-time install (no repo clone required, works from any project)
+npx skills add susumutomita/Gr-diusWeb3
+```
+
+Then run the loop:
 
 ```
-[Browser]                          [Local Claude Code]
-buildAgentLoopInput()              /agent-loop slash command
+[Browser]                          [Claude Code with agent-loop skill]
+buildAgentLoopInput()              /agent-loop
  → clipboard / download                 ↓
                                    read AGENT.md (constitution)
                                    decide ONE PaperTradeAction (≤ 0.0001 ETH)
@@ -81,7 +88,7 @@ parseAgentLoopTrace() + budget check
  → "Approve & Sign on Testnet" (browser MetaMask)
 ```
 
-`AGENT.md` is the constitution. Claude Code is the head. Browser MetaMask is the only signer. Every signed transaction is capped at 0.0001 ETH on a testnet.
+`AGENT.md` is the constitution. The skill is the head. Browser MetaMask is the only signer. Every signed transaction is capped at 0.0001 ETH on a testnet.
 
 ---
 
@@ -173,7 +180,7 @@ packages/frontend/         Vite + React + Canvas (the deployable)
   src/lib/wagmi.ts         testnet-only chains: [sepolia, galileo]
 packages/shared/           Pure functional core (profile · policy · forge · agent-loop)
 contracts/                 Solidity + Foundry (AgentForgeINFT.sol, multi-chain Deploy.s.sol)
-.claude/commands/          agent-loop.md slash command for local Claude Code
+.claude/skills/agent-loop/ Claude Code skill (install via `npx skills add`)
 docs/                      specs · prizes · architecture/harness.md
 images/                    hero + gameplay + dashboard screenshots
 pitch_deck.md              Marp deck (7 slides). Build: `make pitch_pdf`.
