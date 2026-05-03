@@ -6,6 +6,7 @@ import {
   parseEther,
 } from 'viem';
 import { sepolia } from './chains';
+import { ensureChain } from './utils';
 
 /// Uniswap v3 SwapRouter02 on Sepolia.
 /// https://docs.uniswap.org/contracts/v3/reference/deployments
@@ -65,6 +66,8 @@ export async function executeFirstSwap(
   }
 
   const amountIn = parseEther('0.0001');
+
+  await ensureChain(walletClient, sepolia);
 
   const txHash = await walletClient.writeContract({
     address: SWAP_ROUTER_02,
