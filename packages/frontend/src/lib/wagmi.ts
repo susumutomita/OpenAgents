@@ -6,9 +6,10 @@ import {
   sepolia,
 } from 'wagmi/chains';
 import { coinbaseWallet, injected } from 'wagmi/connectors';
+import { galileo } from '../web3/chains';
 
 export const config = createConfig({
-  chains: [sepolia, baseSepolia, optimismSepolia, arbitrumSepolia],
+  chains: [sepolia, baseSepolia, optimismSepolia, arbitrumSepolia, galileo],
   multiInjectedProviderDiscovery: true,
   connectors: [
     injected({ shimDisconnect: true }),
@@ -21,6 +22,7 @@ export const config = createConfig({
     [baseSepolia.id]: http(),
     [optimismSepolia.id]: http(),
     [arbitrumSepolia.id]: http(),
+    [galileo.id]: http(),
   },
   ssr: false,
 });
