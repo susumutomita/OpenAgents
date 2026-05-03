@@ -56,6 +56,20 @@ Hacky bits worth calling out. (1) Testnet-only by construction: four independent
 
 ---
 
+## AI tools used
+
+(任意フィールド。具体的に・誇張なし・正直に。ETHGlobal は最近この欄をシビアに見るので「使った範囲」を明確にしておく)
+
+```
+Claude Code (Anthropic) was used throughout development as a paired engineering assistant: drafting React components, writing the Solidity AgentForgeINFT contract and Foundry deploy script, building the testnet-only guard helpers in packages/frontend/src/web3/utils.ts, debugging the MetaMask "request_already_pending" race in the forge orchestrator, refactoring the safety attestation pipeline, generating Japanese-style BDD tests with bun:test, and writing the AGENT.md runbook plus the FEEDBACK.md / pitch deck / README copy. Every change went through the project's `make before-commit` gate (architecture-harness, biome, typecheck, bun:test, build) and was committed through the developer's own Foundry keystore — no automated commits, no auto-merges, no LLM-signed transactions.
+
+Claude Code is also offered as an optional power-user runtime for the in-app agent loop, shipped as a Claude Code skill (`npx skills add susumutomita/Gr-diusWeb3`). The deployed demo runs end-to-end without it; when present, the skill reads AGENT.md as the agent's constitution and emits a paper-trade decision JSON that the browser re-validates against a hardcoded budget envelope before MetaMask is allowed to fire. The deployed app holds zero LLM cost and zero private keys.
+
+Pixel art for the project logo was hand-coded as `<rect>` elements in SVG — no image-generation model. Game sprites and music were authored from scratch by the team. The pitch deck is plain Marp markdown, generated via locally-pinned @marp-team/marp-cli (no `bunx`, supply-chain hardened).
+```
+
+---
+
 ## Submission form quick reference
 
 | Field | Value |
