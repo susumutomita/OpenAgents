@@ -1,15 +1,13 @@
 import { http, createConfig } from 'wagmi';
-import {
-  arbitrumSepolia,
-  baseSepolia,
-  optimismSepolia,
-  sepolia,
-} from 'wagmi/chains';
 import { coinbaseWallet, injected } from 'wagmi/connectors';
-import { galileo } from '../web3/chains';
+import { galileo, sepolia } from '../web3/chains';
 
+/// Gr@diusWeb3 は testnet 専用。chains には ENS/Uniswap 用の Sepolia と
+/// iNFT mint 用の 0G Galileo のみを置き、mainnet を含めない。これに
+/// 載っていない chain (mainnet 等) に wallet がいるときは TestnetGuard が
+/// Sepolia への switch を要求する。
 export const config = createConfig({
-  chains: [sepolia, baseSepolia, optimismSepolia, arbitrumSepolia, galileo],
+  chains: [sepolia, galileo],
   multiInjectedProviderDiscovery: true,
   connectors: [
     injected({ shimDisconnect: true }),
@@ -19,9 +17,6 @@ export const config = createConfig({
   ],
   transports: {
     [sepolia.id]: http(),
-    [baseSepolia.id]: http(),
-    [optimismSepolia.id]: http(),
-    [arbitrumSepolia.id]: http(),
     [galileo.id]: http(),
   },
   ssr: false,

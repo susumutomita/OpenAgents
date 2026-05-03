@@ -22,6 +22,7 @@ import { Fighter } from './components/Fighter';
 import { Callout, HUDCorners, Reticle } from './components/HUD';
 import { GAME_END_EVENT, MusicPlayer } from './components/MusicPlayer';
 import { SafetyAttestationPanel } from './components/SafetyAttestationPanel';
+import { TestnetGuard } from './components/TestnetGuard';
 import type { Archetype } from './game/runtime';
 import { runOnChainForge } from './web3/forge-onchain';
 import {
@@ -331,6 +332,7 @@ export function App() {
 
   return (
     <div style={S.shell}>
+      <TestnetGuard />
       <StatusBar />
       <Nav onPlay={jumpToArcade} />
       <Hero
@@ -419,6 +421,7 @@ function StatusBar() {
         v={chainLabel}
         color={isConnected ? A.hud : A.mute}
       />
+      <StatusCell k="MODE" v="TESTNET_ONLY" color={A.amber} />
       <StatusCell k="UTC" v={clock} color={A.green} />
       <StatusCell k="OP" v="ETHGLOBAL_TOKYO" />
       <span style={{ color: A.amber, justifySelf: 'end' }}>
