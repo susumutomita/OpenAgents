@@ -158,13 +158,13 @@ Bun · Vite · React 19 · Canvas 2D · TypeScript · Biome · viem · wagmi · 
 
 ## Sponsor integrations
 
-| Sponsor | Role |
-|---|---|
-| **0G** | iNFT on 0G Galileo (chain 16602) + play log on 0G Storage; root hash pinned in iNFT metadata and ENS text record. |
-| **ENS** | Wallet-deterministic subname `{4-hex}.gradiusweb3.eth` on real Sepolia ENS, with safety credential text records. |
-| **Uniswap** | Real WETH→USDC swap on Sepolia v3, capped at 0.0001 ETH. |
-| **Gensyn AXL** | Multi-agent peer-mesh topology surfaced in the dashboard. |
-| **KeeperHub** | Reliable execution narrative (private mempool, retries) in the runtime. |
+Three sponsors, all on real testnets, all load-bearing — not cosmetic.
+
+| Sponsor | Role | Code |
+|---|---|---|
+| **0G** | iNFT minted on 0G Galileo (chain 16602) + play log uploaded to 0G Storage via `Indexer.upload`. Root hash pinned both in the iNFT `storageCID` metadata and in the ENS text record `agent.safety.attestation`, with a `sha256://` fallback when the live indexer flakes. | [`web3/zerog-mint.ts`](./packages/frontend/src/web3/zerog-mint.ts) · [`web3/zerog-storage.ts`](./packages/frontend/src/web3/zerog-storage.ts) |
+| **ENS** | Wallet-deterministic subname `{4-hex}.gradiusweb3.eth` on real Sepolia ENS (NameWrapper + PublicResolver). Pre-flight `Registry.owner()` check prevents collisions. Verifiable text records: `combat-power` / `archetype` / `design-hash` plus the safety credential trio. | [`web3/ens-register.ts`](./packages/frontend/src/web3/ens-register.ts) |
+| **Uniswap** | Real WETH → USDC swap on Sepolia v3 via `exactInputSingle`, hardcoded at `parseEther('0.0001')`. The agent's first on-chain action. DX feedback for the prize lives in [`FEEDBACK.md`](./FEEDBACK.md). | [`web3/uniswap-swap.ts`](./packages/frontend/src/web3/uniswap-swap.ts) |
 
 Prize requirements live in [`docs/prizes/`](./docs/prizes/).
 
