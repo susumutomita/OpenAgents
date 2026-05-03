@@ -27,7 +27,7 @@ export function formatTestnetOnlyError(
   context: string
 ): string {
   const label = SUPPORTED_TESTNET_CHAIN_IDS.get(chainId) ?? `chain ${chainId}`;
-  return `testnet only: ${context} は ${describeSupportedTestnets()} でのみ実行できます (current ${label})`;
+  return `testnet only: ${context} must be on ${describeSupportedTestnets()} (current ${label})`;
 }
 
 export function assertSupportedTestnetChainId(
@@ -45,29 +45,39 @@ export function assertSupportedTestnetChainId(
 /// 直前に明示的に switchChain を呼んで、必要なら wallet_switchEthereumChain
 /// プロンプトをユーザーに見せる。chain がもう一致していれば no-op。
 ///
-/// Defense-in-depth: target も current も testnet allowlist 外なら throw する。
-/// これでロジックバグや将来の改変で mainnet writeContract に到達しても、
-/// ここで必ず止まる (Gr@diusWeb3 は testnet 専用)。
+/// 流れ:
+/// 1. target が testnet allowlist 外なら即 throw (mainnet writeContract を構造で防ぐ)。
+/// 2. current === target なら no-op (already on target)。
+/// 3. それ以外は switchChain を試みる。これが mainnet 始発の人を救う唯一の経路
+///    なので、current が unsupported でも事前 reject せず switch を呼ぶ。
+/// 4. switch が throw すれば user reject 等として friendly に伝播。
+/// 5. switch 後の chain が target でなければ throw (defense-in-depth: ここで初めて
+///    current が allowlist 外であることを検出する)。
+///
+/// User-facing strings は English (UI 全体が English ベースなので統一)。
 export async function ensureChain(
   walletClient: WalletClient,
   target: Chain
 ): Promise<void> {
   assertSupportedTestnetChainId(target.id, `target chain ${target.name}`);
   const currentId = await walletClient.getChainId();
-  assertSupportedTestnetChainId(currentId, 'connected wallet');
   if (currentId === target.id) return;
   try {
     await walletClient.switchChain({ id: target.id });
   } catch (err) {
     const detail = err instanceof Error ? err.message : 'unknown';
     throw new Error(
-      `chain mismatch — ${target.name} (${target.id}) への切替に失敗しました (現在 ${currentId}): ${detail}`
+      `chain mismatch: switch to ${target.name} (${target.id}) was rejected (current chain ${currentId}): ${detail}`
     );
   }
   const switchedId = await walletClient.getChainId();
   if (switchedId !== target.id) {
     throw new Error(
-      `chain mismatch — ${target.name} (${target.id}) への切替後に現在 chainId が一致しませんでした (現在 ${switchedId})`
+      `chain mismatch: after switch, current chainId (${switchedId}) does not equal target ${target.name} (${target.id})`
     );
   }
+  assertSupportedTestnetChainId(
+    switchedId,
+    `connected wallet after switch to ${target.name}`
+  );
 }
