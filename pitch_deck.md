@@ -17,112 +17,38 @@ paginate: true
 
 ---
 
-## Problem
-
-- AI agents can already trade
-- Nobody actually designs them on purpose
-- Default settings = sandwich, drift, drain
-- One config typo can hit mainnet
-
-![bg right:40%](images/02-arm-the-defaults.png)
-
----
-
-## Six Modules. Six Footguns.
+## 6 modules. 6 footguns.
 
 ![w:1100](images/03-six-modules.png)
 
-Each enemy color = one default no agent ships armed with.
+Most agents ship without these defaults armed. We turn each one into a target you have to shoot.
 
 ---
 
-## Seven Steps from Joystick to iNFT
+## 60s arcade → on-chain agent
 
-![w:1100](images/04-forge-protocol.png)
+![w:520](images/05-arcade-title.png) ![w:520](images/08-agent-dashboard.png)
 
----
-
-## The Game
-
-- 60 seconds. WASD or arrows. Auto-fire.
-- Color you destroy most = your archetype
-- Every shot is a vote, every kill is a commit
-
-![bg right:45%](images/05-arcade-title.png)
+Color you destroy most = archetype.
+One run mints an iNFT on 0G Galileo, registers an ENS subname on Sepolia, and signs your first Uniswap swap.
 
 ---
 
-## Every Kill Commits a Module
+## Testnet-only by construction. Claude Code is the head.
 
-![w:520](images/06-gameplay-precision.png) ![w:520](images/07-gameplay-leverage.png)
-
-Slippage cap, margin tier, hedge — all hand-flown into the policy.
-
----
-
-## The Result
-
-![w:1100](images/08-agent-dashboard.png)
-
-iNFT minted. ENS subname registered. Uniswap swap signed. All testnet.
+- wagmi config: only Sepolia + 0G Galileo
+- `ensureChain` allowlist + `TestnetGuard` auto-switch wallets off mainnet
+- Real swap is hardcoded at 0.0001 ETH, forever
+- `AGENT.md` is the agent's constitution; Claude Code reads it locally
+- Browser exports input → `claude /agent-loop` → paste back → MetaMask signs
+- Deployed app holds zero LLM cost and zero private keys
 
 ---
 
-## Why It Can't Go Wrong
-
-- **Layer 1** — wagmi config: only Sepolia + 0G Galileo
-- **Layer 2** — `ensureChain`: testnet allowlist asserted before every write
-- **Layer 3** — `TestnetGuard`: auto-switch wallet off mainnet on connect
-- **Layer 4** — Real swap is hardcoded at 0.0001 ETH. Forever.
-
----
-
-## The Loop
-
-- `AGENT.md` is the agent's constitution
-- Claude Code runs locally as the thinking head
-- Browser exports input JSON to your clipboard
-- `claude /agent-loop` decides one paper trade
-- Paste trace back → MetaMask signs in browser
-
----
-
-## Why Claude Code
-
-- Deployed app runs zero LLM cost
-- Local Claude Code = the user's own quota
-- CLI never holds a private key
-- Browser MetaMask is still the only signer
-- Budget envelope is structural, not vibes
-
----
-
-## Demo
+## Try it
 
 **https://gr-dius-web3-frontend.vercel.app/**
 
-- Connect any wallet — we switch you to testnet
-- Play 60 s
-- Watch iNFT + ENS + Uniswap land on testnet
-- Hand off to Claude Code for one paper-trade decision
-- Approve & sign in MetaMask
-
----
-
-## Tech Stack
-
-- Bun + Hono + Vite + React 19 + Biome
-- viem + wagmi + Foundry
-- 0G Galileo (iNFT) + 0G Storage SDK
-- ENS NameWrapper + PublicResolver (Sepolia)
-- Uniswap v3 SwapRouter02 (Sepolia)
-- Claude Code as local agent runtime
-
----
-
-## Thank You
-
-**Gr@diusWeb3**
+Bun + Vite + React 19 · viem + wagmi + Foundry · 0G Storage SDK · ENS NameWrapper · Uniswap v3 · Claude Code as local agent runtime
 
 github.com/susumutomita/Gr-diusWeb3
-gr-dius-web3-frontend.vercel.app

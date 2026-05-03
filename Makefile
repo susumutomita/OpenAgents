@@ -54,6 +54,19 @@ format_check:
 architecture_harness:
 	bun scripts/architecture-harness.ts --staged --fail-on=error
 
+# Pitch deck (Marp).
+#
+# locally-pinned @marp-team/marp-cli を使う (`bun marp` = node_modules/.bin/marp)。
+# bunx は使わない (lockfile の外で都度フェッチするためサプライチェーンリスク)。
+# PDF 生成は puppeteer + Chromium に依存する。初回は Chromium をダウンロード。
+.PHONY: pitch
+pitch:
+	bun run pitch:html
+
+.PHONY: pitch_pdf
+pitch_pdf:
+	bun run pitch:pdf
+
 .PHONY: before-commit
 before-commit: architecture_harness lint_text lint typecheck test build
 

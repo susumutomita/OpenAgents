@@ -147,3 +147,7 @@ contracts/lib/
 contracts/cache/
 contracts/out/
 contracts/broadcast/
+
+# Marp build artifacts (`make pitch` / `make pitch_pdf` で再生成)
+pitch_deck.html
+pitch_deck.pdf
