@@ -95,7 +95,30 @@ make before-commit     # lint + typecheck + test + build
 make pitch_pdf         # build the submission deck
 ```
 
-Multi-chain contract deploy via Foundry keystore / Ledger / interactive — see the [Makefile](./Makefile) header. No raw private keys in `.env`, ever.
+### Make the iNFT live
+
+The repo ships a deploy script for `AgentForgeINFT.sol`, but the iNFT row of the dashboard fails until you actually deploy and tell the frontend where the contract lives.
+
+```bash
+# one-time keystore setup (Foundry)
+cast wallet import deployer --interactive
+
+# 0G Galileo (chain id 16602)
+make deploy_galileo ACCOUNT=deployer SENDER=0xYourAddress
+
+# Sepolia / Base Sepolia / OP Sepolia / Arbitrum Sepolia
+make deploy_sepolia          ACCOUNT=deployer SENDER=0xYourAddress
+make deploy_base_sepolia     ACCOUNT=deployer SENDER=0xYourAddress
+make deploy_op_sepolia       ACCOUNT=deployer SENDER=0xYourAddress
+make deploy_arbitrum_sepolia ACCOUNT=deployer SENDER=0xYourAddress
+
+# all of the above in one shot
+make deploy_all ACCOUNT=deployer SENDER=0xYourAddress
+```
+
+Per chain, copy the printed contract address into the Vercel project as `VITE_INFT_ADDRESS=0x...` and redeploy the frontend so the dashboard's iNFT mint can target it. Sepolia-family deploys verify on Etherscan automatically; Galileo skips verify (no Etherscan API yet).
+
+Signing always goes through Foundry's CLI flags — keystore (`ACCOUNT=...`), Ledger (`LEDGER=1`), Trezor (`TREZOR=1`), or interactive (`INTERACTIVE=1`). No raw private keys in `.env`, ever.
 
 ---
 
