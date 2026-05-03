@@ -13,8 +13,10 @@ sepolia = "${SEPOLIA_RPC_URL}"
 base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
 op_sepolia = "${OP_SEPOLIA_RPC_URL}"
 arbitrum_sepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
-# 0G Galileo testnet (chainId 16602). Public RPC; override via GALILEO_RPC_URL.
-galileo = "${GALILEO_RPC_URL:-https://evmrpc-testnet.0g.ai}"
+# 0G Galileo testnet (chainId 16602). Foundry の env var 解決は `${VAR:-default}`
+# 形式の fallback 構文をサポートしないので、public RPC を直書きする。
+# 別 RPC を使いたい場合は forge コマンドに `--rpc-url https://...` を直接渡す。
+galileo = "https://evmrpc-testnet.0g.ai"
 
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
