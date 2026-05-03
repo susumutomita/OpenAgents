@@ -51,11 +51,20 @@ export function aggregateProof(
   };
 }
 
-/// Run the on-chain forge pipeline: storage put → mint (mint depends on
-/// the CID, so it's chained sequentially) and ENS subname registration in
-/// parallel. Each row is reported independently so a single failure (e.g.
-/// mint reverting because the contract isn't deployed yet) doesn't mask
-/// upstream successes.
+/// Run the on-chain forge pipeline serially:
+/// 1) 0G Galileo: storage upload → iNFT mint (same chain, no extra switch)
+/// 2) Sepolia: ENS subname registration
+///
+/// 旧実装は storage+mint と ENS を `Promise.all` で並列実行していたが、
+/// MetaMask は per-origin で `wallet_requestPermissions` (= switchChain) を
+/// 1 つしか pending にできないので、Galileo と Sepolia の switch が同時に
+/// 発火すると後発が `Requested resource not available. Request of type
+/// 'wallet_requestPermissions' already pending` で reject されていた。
+///
+/// 並列実行は wallet 側がどのみち signature prompt を直列化するので、
+/// user-facing のレイテンシは serial にしてもほぼ変わらない。serial にする
+/// ことで chain switch が確実に 1 つずつ片付き、user reject も友好的な
+/// エラーとして対応する step だけに表示できる。
 ///
 /// Pure orchestration: this function does not throw. It always resolves with
 /// an OnChainProof where each step is either success or failed.
@@ -75,32 +84,30 @@ export async function runOnChainForge(
 
   const owner = account.address as Address;
   const handle = draft.agent.ensName.split('.')[0] ?? 'pilot';
-
   const playLogHash = toHexBytes(draft.agent.birthHash);
 
-  const storageThenMint = (async (): Promise<{
-    storageSettled: PromiseSettledResult<StorageProof>;
-    mintSettled: PromiseSettledResult<MintProof>;
-  }> => {
-    // 0G Storage に playLog を real put。signer 構築に失敗したら sha256 fallback。
-    let signer: ZeroGSigner | undefined;
-    try {
-      signer = await buildZeroGSigner(walletClient);
-    } catch {
-      signer = undefined;
-    }
-    let storage: StorageProof;
-    try {
-      storage = await putPlayLog(draft.playLog, signer);
-    } catch (storageError) {
-      return {
-        storageSettled: { status: 'rejected', reason: storageError },
-        mintSettled: {
-          status: 'rejected',
-          reason: new Error('skipped: storage upload failed'),
-        },
-      };
-    }
+  // ── Phase 1: 0G Galileo (storage upload → iNFT mint) ────────────────
+  let storageSettled: PromiseSettledResult<StorageProof>;
+  let mintSettled: PromiseSettledResult<MintProof>;
+  let signer: ZeroGSigner | undefined;
+  try {
+    signer = await buildZeroGSigner(walletClient);
+  } catch {
+    signer = undefined;
+  }
+  let storage: StorageProof;
+  try {
+    storage = await putPlayLog(draft.playLog, signer);
+    storageSettled = { status: 'fulfilled', value: storage };
+  } catch (storageError) {
+    storageSettled = { status: 'rejected', reason: storageError };
+    mintSettled = {
+      status: 'rejected',
+      reason: new Error('skipped: storage upload failed'),
+    };
+    storage = { cid: '' };
+  }
+  if (storageSettled.status === 'fulfilled') {
     try {
       const mint = await mintINft(walletClient, {
         ensName: draft.agent.ensName,
@@ -110,41 +117,37 @@ export async function runOnChainForge(
         combatPower: BigInt(draft.agent.profile.combatPower),
         storageCID: storage.cid,
       });
-      return {
-        storageSettled: { status: 'fulfilled', value: storage },
-        mintSettled: { status: 'fulfilled', value: mint },
-      };
+      mintSettled = { status: 'fulfilled', value: mint };
     } catch (mintError) {
-      return {
-        storageSettled: { status: 'fulfilled', value: storage },
-        mintSettled: { status: 'rejected', reason: mintError },
-      };
+      mintSettled = { status: 'rejected', reason: mintError };
     }
-  })();
+  } else {
+    // mintSettled は上の catch ブロックで既に "skipped" を入れてある。
+    // TS narrowing 用にここで noop。
+    mintSettled ??= {
+      status: 'rejected',
+      reason: new Error('skipped: storage upload failed'),
+    };
+  }
 
-  const ensPromise = registerSubname(walletClient, {
-    handle,
-    owner,
-    textRecords: {
-      'combat-power': String(draft.agent.profile.combatPower),
-      archetype: draft.agent.archetype,
-      'design-hash': draft.agent.birthHash,
-    },
-  });
-
-  const [{ storageSettled, mintSettled }, ensSettled] = await Promise.all([
-    storageThenMint,
-    ensPromise.then(
-      (value): PromiseSettledResult<EnsProof> => ({
-        status: 'fulfilled',
-        value,
-      }),
-      (reason): PromiseSettledResult<EnsProof> => ({
-        status: 'rejected',
-        reason,
-      })
-    ),
-  ]);
+  // ── Phase 2: Sepolia (ENS subname + text records) ───────────────────
+  // Phase 1 が完全に終わった後に走らせる。これで chain switch が serial に
+  // なって MetaMask の "request already pending" エラーが起きない。
+  let ensSettled: PromiseSettledResult<EnsProof>;
+  try {
+    const ens = await registerSubname(walletClient, {
+      handle,
+      owner,
+      textRecords: {
+        'combat-power': String(draft.agent.profile.combatPower),
+        archetype: draft.agent.archetype,
+        'design-hash': draft.agent.birthHash,
+      },
+    });
+    ensSettled = { status: 'fulfilled', value: ens };
+  } catch (ensError) {
+    ensSettled = { status: 'rejected', reason: ensError };
+  }
 
   return aggregateProof(storageSettled, mintSettled, ensSettled);
 }
