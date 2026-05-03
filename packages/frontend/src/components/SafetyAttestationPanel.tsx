@@ -61,15 +61,16 @@ export function SafetyAttestationPanel({
           AGENT SAFETY ATTESTATION
         </span>
         <h2 style={{ color: A.ink }}>
-          安全スコア{' '}
+          Safety score{' '}
           <span style={{ color: A.acid, fontSize: 36 }}>
             {attestation.score}
           </span>
           <span style={{ color: A.mute, fontSize: 14 }}> / 100</span>
         </h2>
         <p style={{ color: A.mute, fontSize: 12 }}>
-          ENS subname に書き込まれる verifiable agent safety credential。 0G
-          Storage に attestation 本体を put、ENS text record に CID を pin。
+          A verifiable agent safety credential written to the ENS subname. The
+          attestation body is put on 0G Storage; the ENS text record pins the
+          CID.
         </p>
       </div>
 
@@ -208,20 +209,20 @@ function BreakdownLedger({
         color: A.ink,
       }}
     >
-      <LedgerRow label="ベース基準点" value={base} color={A.mute} />
+      <LedgerRow label="Base score" value={base} color={A.mute} />
       <LedgerRow
-        label="早クリアボーナス"
+        label="Clear-time bonus"
         value={breakdown.clearTimeBonus}
         color={A.green}
       />
       <LedgerRow
-        label="誤射ペナルティ"
+        label="Miss penalty"
         value={breakdown.missPenalty}
         color={A.hot}
       />
       {clampDelta !== 0 ? (
         <LedgerRow
-          label="0..100 クリップ補正"
+          label="0..100 clip correction"
           value={clampDelta}
           color={A.mute}
         />
@@ -238,7 +239,7 @@ function BreakdownLedger({
           fontWeight: 700,
         }}
       >
-        <span style={{ color: A.amber, letterSpacing: '0.16em' }}>合計</span>
+        <span style={{ color: A.amber, letterSpacing: '0.16em' }}>TOTAL</span>
         <span aria-hidden="true" />
         <span
           style={{
