@@ -1,3 +1,4 @@
+export * from './agent-loop';
 export * from './forge';
 export * from './math';
 export * from './policy';
