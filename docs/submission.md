@@ -56,6 +56,73 @@ Hacky bits worth calling out. (1) Testnet-only by construction: four independent
 
 ---
 
+## Per-prize "How are you using this Protocol / API?"
+
+各 prize ごとの 2 欄: 説明文 + コード行へのパーマリンク。
+
+URL は `main` ブランチの permalink で、judges がクリックすれば該当行がハイライトされる。
+
+### 0G — $15,000
+
+**Why applicable:**
+
+```
+Gr@diusWeb3 uses 0G as a load-bearing primitive in two places. (1) iNFT mint: AgentForgeINFT.sol is an ERC-721 with deterministic tokenId = keccak256(msg.sender, playLogHash) deployed live on 0G Galileo (chain 16602) at 0xcB74b0E49dB3968b4e8cEB70EFAaA6bb668346D7. The frontend mints via viem's writeContract against the 0G public RPC (https://evmrpc-testnet.0g.ai) right after a 60-second arcade run, so every mint is reproducible from the play log alone. (2) 0G Storage: the play log and AgentSafetyAttestation are uploaded to 0G Storage via @0gfoundation/0g-ts-sdk Indexer.upload(); the resulting 0g://{rootHash} URI is pinned in both the iNFT storageCID metadata and the ENS text record agent.safety.attestation, with a sha256:// fallback so the dashboard stays alive when the live indexer flakes.
+```
+
+**Link to the line of code:**
+
+- iNFT mint (writeContract → forge): https://github.com/susumutomita/Gr-diusWeb3/blob/main/packages/frontend/src/web3/zerog-mint.ts#L78-L92
+- 0G Storage Indexer.upload: https://github.com/susumutomita/Gr-diusWeb3/blob/main/packages/frontend/src/web3/zerog-storage.ts#L136-L143
+- iNFT contract source: https://github.com/susumutomita/Gr-diusWeb3/blob/main/contracts/src/AgentForgeINFT.sol
+- Live deployed contract: https://chainscan-galileo.0g.ai/token/0xcb74b0e49db3968b4e8ceb70efaaa6bb668346d7
+
+(フォームが 1 リンクだけ受け付ける場合: 一番最初の `zerog-mint.ts#L78-L92` を貼る)
+
+### ENS — $5,000
+
+**Why applicable:**
+
+```
+The agent's human-readable identity is a real Sepolia ENS subname like kotetsu-d3f33b.gradiusweb3.eth, registered through NameWrapper.setSubnodeRecord on the canonical Sepolia deployment (0x0635...FcE8) and the PublicResolver (0x8FAD...B7dD). Subnames are wallet-deterministic — the same wallet always derives the same handle — and a pre-flight Registry.owner() check rejects collisions before the parent-owner write so we cannot accidentally clobber another holder's subname. After the wrap, three setText writes pin verifiable agent metadata: combat-power, archetype, design-hash. The agent safety attestation flow adds another text-record trio on top: agent.safety.score, agent.safety.attestation (URI to the 0G storage / sha256 blob), and agent.misalignment.detected. ENS subname + text records turn the iNFT into something a human can read.
+```
+
+**Link to the line of code:**
+
+- NameWrapper.setSubnodeRecord call: https://github.com/susumutomita/Gr-diusWeb3/blob/main/packages/frontend/src/web3/ens-register.ts#L92-L106
+- Text records loop (setText): https://github.com/susumutomita/Gr-diusWeb3/blob/main/packages/frontend/src/web3/ens-register.ts#L116-L128
+- Pre-flight collision check (Registry.owner): https://github.com/susumutomita/Gr-diusWeb3/blob/main/packages/frontend/src/web3/safety-attestation.ts
+
+(1 リンク欄なら `ens-register.ts#L92-L106` を貼る)
+
+### Uniswap Foundation — $5,000
+
+**Why applicable:**
+
+```
+Uniswap is the agent's first real on-chain action. Right after the iNFT mints, the dashboard offers a one-click "Execute First Trade" that calls Uniswap v3 SwapRouter02 on Sepolia (0x3bFA47...7Ae48E) via exactInputSingle, swapping 0.0001 ETH (native, wrapped by the router via payable) into Sepolia USDC (Circle faucet token at 0x1c7D...7238). The amount is hardcoded as parseEther('0.0001') so even a malicious refactor cannot move more than 0.0001 ETH; this is one of four independent layers in the testnet-only guard. Required Uniswap DX feedback for the prize is in FEEDBACK.md (English).
+```
+
+**Link to the line of code:**
+
+- exactInputSingle writeContract: https://github.com/susumutomita/Gr-diusWeb3/blob/main/packages/frontend/src/web3/uniswap-swap.ts#L72-L91
+- Hardcoded 0.0001 ETH cap (testnet guard 4th layer): https://github.com/susumutomita/Gr-diusWeb3/blob/main/packages/frontend/src/web3/uniswap-swap.ts#L67
+- DX feedback: https://github.com/susumutomita/Gr-diusWeb3/blob/main/FEEDBACK.md
+
+(1 リンク欄なら `uniswap-swap.ts#L72-L91` を貼る)
+
+### Star ratings の付け方 (任意の参考)
+
+| Prize | おすすめ ★ | 理由 |
+|---|---|---|
+| 0G | 7-8 | viem からそのまま叩ける、deterministic mint が綺麗。Storage SDK は ethers v6 Signer 要求で BrowserProvider 経由のラップが必要 (摩擦) |
+| ENS | 8-9 | NameWrapper / PublicResolver の deployment ページ + viem との相性で詰まりが少ない。subname で `Registry.owner()` の事前確認に気付くのは hackathon 尺だと厳しい (FEEDBACK 候補) |
+| Uniswap | 8 | exactInputSingle が最小構成で動く。Sepolia の "USDC" 名衝突と canonical address のドキュメントは依然摩擦点 |
+
+これは僕の主観なので submission 時は実体験で書いて OK。
+
+---
+
 ## AI tools used
 
 (任意フィールド。具体的に・誇張なし・正直に。ETHGlobal は最近この欄をシビアに見るので「使った範囲」を明確にしておく)
