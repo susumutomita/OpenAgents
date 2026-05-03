@@ -6,7 +6,7 @@ import {
   parseEther,
 } from 'viem';
 import { sepolia } from './chains';
-import { ensureChain } from './utils';
+import { ensureChain, waitForReceiptWithGrace } from './utils';
 
 /// Uniswap v3 SwapRouter02 on Sepolia.
 /// https://docs.uniswap.org/contracts/v3/reference/deployments
@@ -93,7 +93,7 @@ export async function executeFirstSwap(
     chain: sepolia,
     transport: http(),
   });
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  await waitForReceiptWithGrace(publicClient, txHash);
 
   return {
     txHash,
