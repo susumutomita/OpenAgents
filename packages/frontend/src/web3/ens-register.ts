@@ -6,6 +6,7 @@ import {
   namehash,
 } from 'viem';
 import { sepolia } from './chains';
+import { ensureChain } from './utils';
 
 /// Sepolia ENS NameWrapper. Source:
 /// https://docs.ens.domains/learn/deployments
@@ -83,6 +84,8 @@ export async function registerSubname(
   const parentNode = namehash(parent);
   const fullName = `${input.handle}.${parent}`;
   const node = namehash(fullName);
+
+  await ensureChain(walletClient, sepolia);
 
   // Step 1: NameWrapper.setSubnodeRecord — only the parent owner can call
   // this. For a hackathon-controlled parent this is the deployer wallet.

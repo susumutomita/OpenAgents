@@ -8,6 +8,7 @@ import {
   keccak256,
 } from 'viem';
 import { galileo } from './chains';
+import { ensureChain } from './utils';
 
 const INFT_ABI = [
   {
@@ -71,6 +72,8 @@ export async function mintINft(
       'mintINft: VITE_INFT_ADDRESS is not configured. Deploy AgentForgeINFT to 0G Galileo and set the env var.'
     );
   }
+
+  await ensureChain(walletClient, galileo);
 
   const txHash = await walletClient.writeContract({
     address,
