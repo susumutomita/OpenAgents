@@ -55,6 +55,14 @@ button {
 .hero-kicker,
 .eyebrow {
   display: inline-block;
+  /* `.panel-header` が `display: grid` なので grid item は default で
+     align-self / justify-self: stretch する。inline-block は grid 上では
+     block 扱いになり、結果として pill が full width に伸びて上下にも
+     padding が乗って見える。明示的に self-align を start に固定して
+     compact な pill 形を保つ。 */
+  justify-self: start;
+  align-self: start;
+  width: max-content;
   padding: 6px 10px;
   border-radius: 999px;
   background: rgba(123, 223, 242, 0.18);
