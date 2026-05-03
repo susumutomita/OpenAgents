@@ -284,4 +284,20 @@
 - **chain switch popup 6 連発の集約**: User Persona 共通の指摘。EIP-5792 multicall や 0G upload を Sepolia 上で代理実行する仕組み (今回未対応、follow-up)。
 - **`.env.example` の編集が permission で禁止**されているため `VITE_ZEROG_INDEXER` / `VITE_ZEROG_RPC` の追記は人間に依頼。コードのデフォルト値があるので動作には支障なし。
 - 0G Storage download / merkle 検証機能 (今回 upload のみ)。
-- 0G Storage SDK の TypeScript 型定義に一部 unknown が残る (orchestrator 側で as 変換、follow-up で SDK 側に PR 検討)。
+- 0G Storage SDK の TypeScript 型定義に一部 unknown が残る (orchestrator 側で as 変換、follow-up で SDK 側に PR 検討).
+
+### Autonomous agent loop foundation (testnet-only)
+
+- 目的: Hermes / Claude Code のようなローカル LLM runtime が `AGENT.md` を読んで、
+  この repo 内で安全に testnet だけを操作できるようにする。
+- ルール:
+  - write path は Sepolia / 0G Galileo (16602) 以外を拒否すること。
+  - mainnet / unknown chain / wallet mismatch は即停止。
+  - runbook は root の `AGENT.md`、実装 guard は `packages/frontend/src/web3/utils.ts`。
+- 実装メモ:
+  - `ensureChain` は target / current が testnet allowlist 外なら throw する。
+  - `executeFirstSwap` / `registerSubname` / `mintINft` / safety attestation の write path はすべて shared guard 経由に統一。
+  - UI には TESTNET_ONLY / testnet-only の文言を追加し、レビュー時に誤解しにくくする。
+- 検証:
+  - `packages/frontend/src/web3/utils.test.ts` で allowlist と mainnet 拒否を確認。
+  - 実地 write は Sepolia / 0G Galileo 以外では開始されないことをコードで保証。

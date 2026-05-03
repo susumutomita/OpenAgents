@@ -15,7 +15,7 @@ import {
 import { galileo, sepolia } from './chains';
 import { registerSubname } from './ens-register';
 import type { EnsProof, OnChainStep, StorageProof } from './types';
-import { errorMessage } from './utils';
+import { ensureChain, errorMessage } from './utils';
 import { buildZeroGSigner, putAttestation } from './zerog-storage';
 
 /// Sepolia の ENS Registry。NameWrapper とは別、namehash → owner address を引く。
@@ -35,35 +35,15 @@ const REGISTRY_OWNER_ABI = [
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-/// 任意の chain id への switch を試行する共通ヘルパ。
-/// 既に同 chain ならば no-op。switchChain が throw した場合は friendly な
-/// 日本語メッセージで上位に伝播する (private key 等は露出させない)。
-async function ensureChain(
-  walletClient: WalletClient,
-  targetId: number,
-  label: string
-): Promise<void> {
-  const chainId = walletClient.chain?.id;
-  if (chainId === targetId) return;
-  try {
-    await walletClient.switchChain({ id: targetId });
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : 'unknown';
-    throw new Error(
-      `chain mismatch — ${label} (${targetId}) への切替に失敗しました (現在 ${chainId ?? 'unknown'}): ${detail}`
-    );
-  }
-}
-
 /// Sepolia 接続を assert する。ENS write は Sepolia 以外で走るとアテステーション
 /// が別 chain に書かれる事故になるため、書込み直前で必ず通す。
 async function ensureSepoliaChain(walletClient: WalletClient): Promise<void> {
-  await ensureChain(walletClient, sepolia.id, 'Sepolia');
+  await ensureChain(walletClient, sepolia);
 }
 
 /// 0G Galileo 接続を assert する。0G Storage への put 直前のみ呼ぶ。
 async function ensureGalileoChain(walletClient: WalletClient): Promise<void> {
-  await ensureChain(walletClient, galileo.id, '0G Galileo');
+  await ensureChain(walletClient, galileo);
 }
 
 /// pilot{4 桁 hex} の handle が「自分以外のオーナーに先取りされていない」ことを

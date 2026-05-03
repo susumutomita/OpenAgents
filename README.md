@@ -39,8 +39,9 @@ A 60-second retro arcade shooter that doubles as the world's fastest onboarding 
 | Forge orchestrator (`Promise.allSettled` so one failure never blocks the dashboard) | [`packages/frontend/src/web3/forge-onchain.ts`](./packages/frontend/src/web3/forge-onchain.ts) |
 | Uniswap DX feedback (required for Uniswap prize submission) | [`FEEDBACK.md`](./FEEDBACK.md) |
 | Spec + scoring rubric + Plan log | [`docs/specs/2026-04-27-web3-wiring.md`](./docs/specs/2026-04-27-web3-wiring.md), [`Plan.md`](./Plan.md) |
+| Local autonomous agent runbook (testnet-only) | [`AGENT.md`](./AGENT.md) |
 
-The contract + module surface is intentionally tight (~7 frontend files, 1 contract) so judges can read the entire on-chain pipeline in under 5 minutes.
+The contract + module surface is intentionally tight (~7 frontend files, 1 contract) so judges can read the entire on-chain pipeline in under 5 minutes. For the local autonomous agent loop, read [`AGENT.md`](./AGENT.md) first; it explicitly limits execution to Sepolia and 0G Galileo.
 
 ---
 
@@ -179,7 +180,9 @@ button in the nav bar speaks the standard EIP-1193 protocol — MetaMask /
 Coinbase Wallet / any injected provider connects natively, and chain
 switching to Sepolia / Base Sepolia / OP Sepolia / Arbitrum Sepolia happens
 in-app. The connected address becomes the agent's owner address; no
-in-browser private key derivation is used for live signing.
+in-browser private key derivation is used for live signing. All write paths
+are guarded in code to refuse non-testnet / mainnet execution; the agent loop
+runbook lives in [`AGENT.md`](./AGENT.md).
 
 ---
 

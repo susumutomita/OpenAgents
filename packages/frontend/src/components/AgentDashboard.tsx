@@ -435,9 +435,10 @@ function OnChainProofPanel({
         <span className="eyebrow" style={{ color: A.amber }}>
           ON-CHAIN PROOF
         </span>
-        <h2 style={{ color: A.ink }}>Realized on testnet</h2>
+        <h2 style={{ color: A.ink }}>Realized on testnet only</h2>
         <p style={{ color: A.mute, fontSize: 12 }}>
           0G Galileo iNFT · 0G Storage CID · Sepolia ENS · Sepolia Uniswap.
+          Mainnet / unsupported chain IDs are rejected before any write.
         </p>
       </div>
 
