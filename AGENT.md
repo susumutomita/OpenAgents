@@ -50,7 +50,7 @@ Implementation note
 Agent loop handoff (one cycle)
 - The deployed UI does not run an LLM. It hands off to whatever agent runtime
   is reading this file (Claude Code locally is the default).
-- Slash command spec: .claude/commands/agent-loop.md.
+- Skill spec: .claude/skills/agent-loop/SKILL.md (install with `npx skills add susumutomita/Gr-diusWeb3`).
 - JSON contract: packages/shared/src/agent-loop.ts (AgentLoopInput → AgentLoopTrace,
   schemaVersion 1).
 - Flow: browser copies AgentLoopInput JSON to clipboard → user runs

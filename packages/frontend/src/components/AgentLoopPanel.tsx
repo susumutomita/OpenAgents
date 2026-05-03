@@ -119,16 +119,27 @@ export function AgentLoopPanel({
       <div style={STYLES.header}>
         <span style={STYLES.eyebrow}>AGENT LOOP</span>
         <h2 style={{ color: A.ink, margin: 0 }}>
-          Hand off to local Claude Code
+          Hand off to the agent-loop Claude Code skill
         </h2>
         <p style={{ color: A.mute, fontSize: 12, margin: 0, lineHeight: 1.6 }}>
-          The deployed app does not run an LLM. Copy the play log + forge
-          snapshot below, run{' '}
-          <code style={STYLES.code}>claude /agent-loop</code> locally so Claude
-          Code reads <code style={STYLES.code}>AGENT.md</code> as its
-          constitution, then paste the resulting trace JSON back here. Real
-          signing stays in your browser MetaMask, capped at{' '}
+          The deployed app does not run an LLM. Install the{' '}
+          <code style={STYLES.code}>agent-loop</code> skill once, copy the input
+          JSON below, run <code style={STYLES.code}>/agent-loop</code> in any
+          Claude Code session, then paste the trace back here. Real signing
+          stays in your browser MetaMask, capped at{' '}
           <strong>{input.budget.maxSwapEth} ETH</strong> per action.
+        </p>
+      </div>
+
+      <div style={STYLES.row}>
+        <h3 style={STYLES.h3}>0. One-time skill install</h3>
+        <pre style={STYLES.preview}>
+          <code>npx skills add susumutomita/Gr-diusWeb3</code>
+        </pre>
+        <p style={{ color: A.mute, fontSize: 11, margin: 0, lineHeight: 1.6 }}>
+          Adds the <code style={STYLES.code}>agent-loop</code> skill to{' '}
+          <code style={STYLES.code}>~/.claude/skills/</code>. No repo clone
+          required; the skill is reusable across all your Claude Code sessions.
         </p>
       </div>
 
@@ -152,17 +163,17 @@ export function AgentLoopPanel({
       </div>
 
       <div style={STYLES.row}>
-        <h3 style={STYLES.h3}>2. Run locally</h3>
+        <h3 style={STYLES.h3}>2. Run the skill</h3>
         <ol style={STYLES.ol}>
           <li>
-            Open Claude Code in the repo, run{' '}
+            In any Claude Code session, type{' '}
             <code style={STYLES.code}>/agent-loop</code>.
           </li>
           <li>
-            It will read <code style={STYLES.code}>AGENT.md</code> + the input
-            JSON from your clipboard.
+            The skill reads <code style={STYLES.code}>AGENT.md</code> + the
+            input JSON from your clipboard.
           </li>
-          <li>It outputs a trace JSON respecting your budget envelope.</li>
+          <li>It writes the trace JSON back to your clipboard.</li>
         </ol>
       </div>
 
