@@ -1,4 +1,4 @@
-import type { Chain, WalletClient } from 'viem';
+import type { Chain, Hex, PublicClient, WalletClient } from 'viem';
 import { galileo, sepolia } from './chains';
 
 /// 失敗 reason を画面・ログ表示用の文字列に正規化する。
@@ -80,4 +80,39 @@ export async function ensureChain(
     switchedId,
     `connected wallet after switch to ${target.name}`
   );
+}
+
+/// `waitForTransactionReceipt` を **長めの retry + 失敗を握りつぶす** 形で
+/// 呼ぶラッパ。
+///
+/// 0G Galileo testnet の indexer は時々 receipt 反映までに数十秒かかる。
+/// viem の default は retryCount: 6 / 指数バックオフで合計 ~12s しか待たず、
+/// その後 `TransactionReceiptNotFoundError` を投げる。tx hash 自体は
+/// `writeContract` 段階で取得できているので、explorer で常時検証可能で
+/// あり、demo flow を「receipt 探索が間に合わなかった」だけで止めるのは
+/// 望ましくない。
+///
+/// 60 回 × 2 秒 = 最大 2 分待つ。それでも見つからなければ warning に留め、
+/// 呼び出し元には正常終了として返す (tx は確実に broadcast 済み)。
+/// Receipt が `status: 'reverted'` の場合は viem 側で例外にせず receipt を
+/// 返してくるので、このラッパは混入しない (revert 検出ロジックを足したい
+/// 場合は呼び出し元で receipt をチェックする)。
+export async function waitForReceiptWithGrace(
+  publicClient: PublicClient,
+  hash: Hex
+): Promise<void> {
+  try {
+    await publicClient.waitForTransactionReceipt({
+      hash,
+      pollingInterval: 2_000,
+      retryCount: 60,
+      retryDelay: () => 2_000,
+    });
+  } catch (err) {
+    console.warn(
+      '[waitForReceiptWithGrace] receipt poll exhausted; tx hash is broadcast and verifiable on the explorer:',
+      hash,
+      err
+    );
+  }
 }

@@ -8,7 +8,7 @@ import {
   keccak256,
 } from 'viem';
 import { galileo } from './chains';
-import { ensureChain } from './utils';
+import { ensureChain, waitForReceiptWithGrace } from './utils';
 
 const INFT_ABI = [
   {
@@ -95,7 +95,7 @@ export async function mintINft(
     chain: galileo,
     transport: http(),
   });
-  await publicClient.waitForTransactionReceipt({ hash: txHash });
+  await waitForReceiptWithGrace(publicClient, txHash);
 
   const tokenIdHex = keccak256(
     encodePacked(['address', 'bytes32'], [account.address, opts.playLogHash])

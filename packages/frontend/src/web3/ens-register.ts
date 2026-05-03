@@ -6,7 +6,7 @@ import {
   namehash,
 } from 'viem';
 import { sepolia } from './chains';
-import { ensureChain } from './utils';
+import { ensureChain, waitForReceiptWithGrace } from './utils';
 
 /// Sepolia ENS NameWrapper. Source:
 /// https://docs.ens.domains/learn/deployments
@@ -110,7 +110,7 @@ export async function registerSubname(
     chain: sepolia,
     transport: http(),
   });
-  await publicClient.waitForTransactionReceipt({ hash: wrapTxHash });
+  await waitForReceiptWithGrace(publicClient, wrapTxHash);
 
   // Step 2: write text records sequentially on the public resolver. We do
   // them sequentially (not in parallel) because most wallets serialize
@@ -124,7 +124,7 @@ export async function registerSubname(
       chain: sepolia,
       account,
     });
-    await publicClient.waitForTransactionReceipt({ hash: txHash });
+    await waitForReceiptWithGrace(publicClient, txHash);
   }
 
   return {
