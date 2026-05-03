@@ -111,6 +111,48 @@ Uniswap is the agent's first real on-chain action. Right after the iNFT mints, t
 
 (1 リンク欄なら `uniswap-swap.ts#L72-L91` を貼る)
 
+### "Additional feedback for the Sponsor" 欄
+
+各 prize に sponsor 向けフィードバック欄がある。実際にハマった点を具体的に書くと sponsor からの評価が上がる (彼らはこれをドキュメント / SDK 改善に使う)。
+
+#### 0G
+
+```
+Two real friction points worth flagging.
+
+(1) The 0G TS SDK still requires an ethers v6 Signer, but the rest of the modern web3 frontend stack has consolidated on viem. We had to write a thin wrapper that pulls walletClient.transport into a fresh `ethers.BrowserProvider(...)` and grabs `getSigner()` from it just to satisfy `Indexer.upload`. A first-class viem signer (or even a documented bridge example) would let us drop ~30 lines of duck-typed adapter code. See `packages/frontend/src/web3/zerog-storage.ts` `buildZeroGSigner`.
+
+(2) The Galileo testnet indexer is sometimes slow to surface receipts — viem's default `waitForTransactionReceipt` (retryCount 6, ~12s) gives up before the indexer is ready, so the dashboard reports "TransactionReceiptNotFoundError" even though the tx is broadcast and visible on chainscan-galileo.0g.ai. We worked around it with a 60×2s retry wrapper. The tx itself is fine; it's just the read path that's flaky. Two related infra papercuts: foundry.toml's Bash-style `${VAR:-default}` fallback is not supported by Foundry's TOML resolver (we had to hardcode the public RPC), and `forge script --verify` fails on Galileo because there is no Etherscan-compatible verifier yet. Documenting these "Galileo skips verify" / "use a longer receipt poll" paths in the 0G dev docs would save the next team 2 hours.
+
+The faucet (faucet.0g.ai) was unusable for us during the build window because the X login backend (request-token) was returning 404. The hackathon-specific faucet (0g-faucet-hackathon.vercel.app + promo code OPEN-AGENT) saved us, but it was discovered via a community post — surfacing it from the canonical 0G developer landing page would have been a clean fix.
+```
+
+#### ENS
+
+```
+ENS on Sepolia was the smoothest of the three integrations. NameWrapper + PublicResolver are viem-native, and `setSubnodeRecord` plus a `setText` loop got us a wallet-deterministic subname like kotetsu-d3f33b.gradiusweb3.eth in well under an afternoon.
+
+The one non-obvious gotcha worth surfacing in docs: `NameWrapper.setSubnodeRecord` happily overwrites an existing subnode if the parent owner calls it, which means an honest dApp can accidentally clobber a user's subname. We added a pre-flight `Registry.owner(namehash(label.parent))` check to detect collisions and refuse the write. This pattern feels like it should be a first-class snippet in the ENS docs — "before you call setSubnodeRecord as the parent, check Registry.owner of the target node" — because the failure mode (silent grief over an existing subname) is the kind of thing only experienced ENS builders would think to guard against.
+
+Smaller wishes: a single official page that lists canonical Sepolia addresses for NameWrapper / PublicResolver / Registry side-by-side with mainnet, and an EIP-5792 multicall recipe for "set N text records in one signature" — right now writing combat-power / archetype / design-hash is three separate MetaMask prompts and judges visibly tire of clicking past slides 4-5-6 of the same flow.
+```
+
+#### Uniswap Foundation
+
+```
+The Uniswap v3 surface itself was excellent — `exactInputSingle` from viem is a one-shot writeContract and we shipped a real Sepolia WETH→USDC swap as the agent's first on-chain action with zero AMM-specific code. Sending native ETH via `payable` and letting the router wrap it inline is a clean fit for "first action" UX; users don't need a separate wrap step.
+
+Friction was not in the API but in the surrounding paths.
+
+(1) Sepolia has multiple things called "USDC" and there is no single canonical addresses page for v3. We wasted ~30 minutes pinning down which token to use against which fee tier; we ended up hardcoding Circle's faucet USDC (0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238) and the v3 SwapRouter02 (0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E). A single `/contracts/sepolia` table in the docs would have been the obvious place to look.
+
+(2) `amountOutMinimum = 0` is the obvious choice for a smallest-possible demo (we capped at 0.0001 ETH for safety) but it is also exactly the configuration most likely to read as "not production-ready." A docs note like "this is fine for demos but never ship 0 to mainnet — here's how to plug in the quote API for a sane min" would let teams ship demos confidently without inviting reviewer concern.
+
+(3) The default failure path bubbles raw revert reasons up through viem; building a friendly UI required us to split "wallet not connected / chain mismatch / insufficient balance" client-side. A higher-level error mapping helper from Uniswap would dramatically improve the look-and-feel of beginner integrations.
+
+Full DX log lives in our FEEDBACK.md (https://github.com/susumutomita/Gr-diusWeb3/blob/main/FEEDBACK.md).
+```
+
 ### Star ratings の付け方 (任意の参考)
 
 | Prize | おすすめ ★ | 理由 |
