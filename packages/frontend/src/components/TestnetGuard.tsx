@@ -36,9 +36,9 @@ export function TestnetGuard() {
     <div role="alert" style={STYLES.banner}>
       <span style={STYLES.tag}>TESTNET ONLY</span>
       <span style={STYLES.body}>
-        Gr@diusWeb3 は {SUPPORTED_LABEL} 専用です。現在 wallet は chain{' '}
-        {chainId} にいます。{PRIMARY_TESTNET.name} への切り替えを wallet で
-        承認してください。
+        Gr@diusWeb3 only runs on {SUPPORTED_LABEL}. Wallet is currently on chain{' '}
+        {chainId}. Approve the switch to {PRIMARY_TESTNET.name} in your wallet
+        to continue.
       </span>
       <button
         type="button"
