@@ -89,23 +89,58 @@ dev:
 #        make deploy NETWORK=sepolia INTERACTIVE=1
 #
 # RPC URL is sourced from <NETWORK>_RPC_URL env var (e.g. SEPOLIA_RPC_URL).
+# Galileo は GALILEO_RPC_URL が未指定の場合に foundry.toml が
+# https://evmrpc-testnet.0g.ai を fallback として渡す。
 
 NETWORK_UPPER = $(shell echo $(NETWORK) | tr a-z A-Z)
 SIGNER_FLAGS = $(if $(LEDGER),--ledger,$(if $(TREZOR),--trezor,$(if $(INTERACTIVE),--interactive,$(if $(ACCOUNT),--account $(ACCOUNT),$(error No signer specified — pass ACCOUNT=name OR LEDGER=1 OR TREZOR=1 OR INTERACTIVE=1)))))
 SENDER_FLAG = $(if $(SENDER),--sender $(SENDER),)
 
+# 0G Galileo (16602) は Etherscan 互換 API を持たないので --verify を付けると
+# forge が verify ステップで必ず失敗する。Galileo のときは verify を外し、
+# それ以外 (Sepolia 系) は付ける。
+VERIFY_FLAG = $(if $(filter galileo,$(NETWORK)),,--verify)
+
+# `--chain galileo` は Foundry の組み込み chain alias 表に無くて警告になる。
+# Galileo のときは --chain を省いて RPC からの自動検出に任せる
+# (forge script は eth_chainId をそのまま使うので tx 署名は正しく動く)。
+CHAIN_FLAG = $(if $(filter galileo,$(NETWORK)),,--chain $(NETWORK))
+
 .PHONY: deploy
 deploy:
 	cd contracts && forge script script/Deploy.s.sol:Deploy \
-		--rpc-url $${$(NETWORK_UPPER)_RPC_URL:?missing $(NETWORK_UPPER)_RPC_URL} \
+		--rpc-url $(NETWORK) \
 		--broadcast \
-		--verify \
-		--chain $(NETWORK) \
+		$(VERIFY_FLAG) \
+		$(CHAIN_FLAG) \
 		$(SIGNER_FLAGS) $(SENDER_FLAG)
+
+# Per-chain shortcuts so judges can copy-paste a single line per chain.
+# 例: `make deploy_galileo ACCOUNT=deployer SENDER=0x...`
+# `--chain galileo` を Foundry の rpc_endpoints キーと合わせる。
+.PHONY: deploy_sepolia
+deploy_sepolia:
+	$(MAKE) deploy NETWORK=sepolia
+
+.PHONY: deploy_base_sepolia
+deploy_base_sepolia:
+	$(MAKE) deploy NETWORK=base_sepolia
+
+.PHONY: deploy_op_sepolia
+deploy_op_sepolia:
+	$(MAKE) deploy NETWORK=op_sepolia
+
+.PHONY: deploy_arbitrum_sepolia
+deploy_arbitrum_sepolia:
+	$(MAKE) deploy NETWORK=arbitrum_sepolia
+
+.PHONY: deploy_galileo
+deploy_galileo:
+	$(MAKE) deploy NETWORK=galileo
 
 .PHONY: deploy_all
 deploy_all:
-	@for network in sepolia base_sepolia op_sepolia arbitrum_sepolia; do \
+	@for network in sepolia base_sepolia op_sepolia arbitrum_sepolia galileo; do \
 		echo "▶ deploying to $$network"; \
 		$(MAKE) deploy NETWORK=$$network || exit 1; \
 	done
