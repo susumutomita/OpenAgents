@@ -70,7 +70,7 @@ async function ensureSubnameAvailable(
   const isSameOwner = owner.toLowerCase() === expectedOwner.toLowerCase();
   if (!isFree && !isSameOwner) {
     throw new Error(
-      `handle ${handle}.${parent} は別のオーナーが保有しています。再生成してください`
+      `handle ${handle}.${parent} is already owned by another address. Please regenerate.`
     );
   }
 }

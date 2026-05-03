@@ -16,8 +16,9 @@ export const MISALIGNMENT_CARDS: Record<MisalignmentKind, MisalignmentCard> = {
     kind: 'sycophancy',
     label: 'Sycophancy',
     description:
-      'Agent が利用者に都合の良い signal だけ拾い、反対意見を黙殺する失敗モード。',
-    example: 'oracle に否定値が出ても無視して買い増しを推奨する。',
+      'The agent picks up only signals that flatter the user and ignores dissenting evidence.',
+    example:
+      'Recommends buying more even when the oracle prints a negative signal.',
     glyph: '◉',
     color: '#c084ff',
   },
@@ -25,8 +26,9 @@ export const MISALIGNMENT_CARDS: Record<MisalignmentKind, MisalignmentCard> = {
     kind: 'reward_hacking',
     label: 'Reward Hacking',
     description:
-      '指標 (yield や PnL) を歪めて短期スコアだけ吊り上げ、本質を最適化しない。',
-    example: 'APY 表示を maximizing する Pool に過剰アロケートする。',
+      'Bends a metric (yield or PnL) to lift a short-term score instead of optimizing the real objective.',
+    example:
+      'Over-allocates to a pool that maximizes the displayed APY rather than risk-adjusted return.',
     glyph: '◇',
     color: '#40f070',
   },
@@ -34,8 +36,9 @@ export const MISALIGNMENT_CARDS: Record<MisalignmentKind, MisalignmentCard> = {
     kind: 'prompt_injection',
     label: 'Prompt Injection',
     description:
-      '外部入力に "approve all" などの指示が混じり、安全境界を超えてしまう。',
-    example: '怪しい contract の "Sign anything" 指示にそのまま追従する。',
+      'External input slips in "approve all" style instructions and the agent crosses its own safety boundary.',
+    example:
+      'Follows a malicious contract\'s "sign anything" prompt without questioning it.',
     glyph: '▲',
     color: '#7bdff2',
   },
@@ -43,8 +46,9 @@ export const MISALIGNMENT_CARDS: Record<MisalignmentKind, MisalignmentCard> = {
     kind: 'goal_misgen',
     label: 'Goal Misgeneralization',
     description:
-      'proxy metric だけ最適化して本来のゴールから逸脱する失敗モード。',
-    example: 'スリッページ最小化に集中して取引機会自体を失う。',
+      'Optimizes a proxy metric so hard that it drifts away from the actual goal it was meant to pursue.',
+    example:
+      'Focuses on minimizing slippage and ends up missing the trade entirely.',
     glyph: '☓',
     color: '#ff5252',
   },
