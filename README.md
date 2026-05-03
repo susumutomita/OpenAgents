@@ -97,23 +97,25 @@ make pitch_pdf         # build the submission deck
 
 ### Make the iNFT live
 
-The repo ships a deploy script for `AgentForgeINFT.sol`, but the iNFT row of the dashboard fails until you actually deploy and tell the frontend where the contract lives.
+The repo ships a deploy script for `AgentForgeINFT.sol`, but the iNFT row of the dashboard fails until you actually deploy and tell the frontend where the contract lives. Never import your daily-driver private key — generate a disposable deployer instead:
 
 ```bash
-# one-time keystore setup (Foundry)
-cast wallet import deployer --interactive
+# one-time: generate a fresh wallet + import it into the encrypted keystore
+make deploy_setup
 
-# 0G Galileo (chain id 16602)
-make deploy_galileo ACCOUNT=deployer SENDER=0xYourAddress
-
-# Sepolia / Base Sepolia / OP Sepolia / Arbitrum Sepolia
+# fund the printed address with 0G Galileo + Sepolia testnet ETH (faucets),
+# then deploy. Each `make deploy_*` command prompts for the keystore password.
+make deploy_galileo          ACCOUNT=deployer SENDER=0xYourAddress
 make deploy_sepolia          ACCOUNT=deployer SENDER=0xYourAddress
 make deploy_base_sepolia     ACCOUNT=deployer SENDER=0xYourAddress
 make deploy_op_sepolia       ACCOUNT=deployer SENDER=0xYourAddress
 make deploy_arbitrum_sepolia ACCOUNT=deployer SENDER=0xYourAddress
 
-# all of the above in one shot
+# or every chain in one shot
 make deploy_all ACCOUNT=deployer SENDER=0xYourAddress
+
+# forgot your deployer address? print it
+make deploy_address
 ```
 
 Per chain, copy the printed contract address into the Vercel project as `VITE_INFT_ADDRESS=0x...` and redeploy the frontend so the dashboard's iNFT mint can target it. Sepolia-family deploys verify on Etherscan automatically; Galileo skips verify (no Etherscan API yet).
