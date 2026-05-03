@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Gr@diusWeb3 logo">
+  <title>Gr@diusWeb3</title>
+  <desc>Pixel-art @ glyph framed in amber, with the wordmark Gr@diusWeb3 below. Colors match the site palette: amber #ffb84d, acid #c8ff00, ink #e6f1ff, panel #0a1118.</desc>
+
+  <defs>
+    <!-- Pixel grid: every "pixel" is 8x8 in the 256x256 viewBox.
+         Hand-drawn @ glyph at 13x13 pixel grid (104x104 px), centered.
+         Top-left of glyph: (76, 32). Each <rect> below is one pixel = 8x8. -->
+    <g id="pixel-at" fill="#ffb84d">
+      <!-- row 0: outer rim top -->
+      <rect x="3" y="0" width="7" height="1"/>
+      <!-- row 1 -->
+      <rect x="2" y="1" width="1" height="1"/>
+      <rect x="10" y="1" width="1" height="1"/>
+      <!-- row 2 -->
+      <rect x="1" y="2" width="1" height="1"/>
+      <rect x="11" y="2" width="1" height="1"/>
+      <!-- row 3 -->
+      <rect x="1" y="3" width="1" height="1"/>
+      <rect x="5" y="3" width="3" height="1"/>
+      <rect x="11" y="3" width="1" height="1"/>
+      <!-- row 4 -->
+      <rect x="1" y="4" width="1" height="1"/>
+      <rect x="4" y="4" width="1" height="1"/>
+      <rect x="8" y="4" width="1" height="1"/>
+      <rect x="11" y="4" width="1" height="1"/>
+      <!-- row 5: inner ring left + dot core -->
+      <rect x="1" y="5" width="1" height="1"/>
+      <rect x="4" y="5" width="1" height="1"/>
+      <rect x="6" y="5" width="2" height="1"/>
+      <rect x="8" y="5" width="1" height="1"/>
+      <rect x="11" y="5" width="1" height="1"/>
+      <!-- row 6 -->
+      <rect x="1" y="6" width="1" height="1"/>
+      <rect x="4" y="6" width="1" height="1"/>
+      <rect x="8" y="6" width="1" height="1"/>
+      <rect x="11" y="6" width="1" height="1"/>
+      <!-- row 7 -->
+      <rect x="1" y="7" width="1" height="1"/>
+      <rect x="4" y="7" width="1" height="1"/>
+      <rect x="8" y="7" width="1" height="1"/>
+      <rect x="11" y="7" width="1" height="1"/>
+      <!-- row 8: bottom of inner ring -->
+      <rect x="1" y="8" width="1" height="1"/>
+      <rect x="5" y="8" width="3" height="1"/>
+      <rect x="8" y="8" width="1" height="1"/>
+      <rect x="11" y="8" width="1" height="1"/>
+      <!-- row 9 -->
+      <rect x="2" y="9" width="1" height="1"/>
+      <rect x="11" y="9" width="1" height="1"/>
+      <!-- row 10 -->
+      <rect x="2" y="10" width="1" height="1"/>
+      <rect x="11" y="10" width="1" height="1"/>
+      <!-- row 11: outer rim bottom-left only (open mouth on right) -->
+      <rect x="3" y="11" width="1" height="1"/>
+      <rect x="11" y="11" width="2" height="1"/>
+      <!-- row 12 -->
+      <rect x="4" y="12" width="9" height="1"/>
+    </g>
+  </defs>
+
+  <!-- Background -->
+  <rect width="256" height="256" fill="#05080c"/>
+
+  <!-- Outer NES-style frame (double line in amber) -->
+  <rect x="6" y="6" width="244" height="244" fill="none" stroke="#ffb84d" stroke-width="2"/>
+  <rect x="12" y="12" width="232" height="232" fill="none" stroke="#1a2735" stroke-width="1"/>
+
+  <!-- Tiny corner reticles (NES HUD feel) -->
+  <g fill="#ffb84d">
+    <rect x="14" y="14" width="6" height="1"/>
+    <rect x="14" y="14" width="1" height="6"/>
+    <rect x="236" y="14" width="6" height="1"/>
+    <rect x="241" y="14" width="1" height="6"/>
+    <rect x="14" y="241" width="6" height="1"/>
+    <rect x="14" y="236" width="1" height="6"/>
+    <rect x="236" y="241" width="6" height="1"/>
+    <rect x="241" y="236" width="1" height="6"/>
+  </g>
+
+  <!-- Pixel @ glyph: 13 grid cells × 8 px = 104 px, centered horizontally,
+       slightly above center to leave room for the wordmark. -->
+  <use href="#pixel-at" transform="translate(76 36) scale(8)"/>
+
+  <!-- Wordmark: GR@DIUS in ink, WEB3 in acid green, monospace.
+       Uses a generic stack so it renders consistently across browsers. -->
+  <g font-family='"JetBrains Mono","IBM Plex Mono",ui-monospace,Menlo,monospace'
+     font-weight="700"
+     text-anchor="middle"
+     letter-spacing="2">
+    <text x="128" y="184" font-size="20" fill="#e6f1ff">GR@DIUS</text>
+    <text x="128" y="208" font-size="20" fill="#c8ff00">WEB3</text>
+  </g>
+
+  <!-- Tagline -->
+  <g font-family='"JetBrains Mono",ui-monospace,Menlo,monospace'
+     font-size="8"
+     letter-spacing="2"
+     text-anchor="middle"
+     fill="#5a6c80">
+    <text x="128" y="232">PLAY · FORGE · TESTNET ONLY</text>
+  </g>
+</svg>
