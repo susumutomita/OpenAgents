@@ -27,7 +27,7 @@ export function TestnetGuard() {
     if (!onUnsupported || chainId === undefined) return;
     if (lastAttempted === chainId) return;
     setLastAttempted(chainId);
-    switchChain({ chainId: PRIMARY_TESTNET.id });
+    void switchChain({ chainId: PRIMARY_TESTNET.id });
   }, [onUnsupported, chainId, lastAttempted, switchChain]);
 
   if (!onUnsupported) return null;
@@ -43,7 +43,7 @@ export function TestnetGuard() {
       <button
         type="button"
         style={STYLES.button}
-        onClick={() => switchChain({ chainId: PRIMARY_TESTNET.id })}
+        onClick={() => void switchChain({ chainId: PRIMARY_TESTNET.id })}
       >
         Switch to {PRIMARY_TESTNET.name}
       </button>
