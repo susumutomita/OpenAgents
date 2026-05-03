@@ -94,7 +94,7 @@ export function AgentLoopPanel({
       parsed = JSON.parse(pasteText);
     } catch (caught) {
       setPasteError(
-        `JSON として読めません: ${
+        `Could not parse as JSON: ${
           caught instanceof Error ? caught.message : String(caught)
         }`
       );
@@ -107,7 +107,7 @@ export function AgentLoopPanel({
     }
     if (result.trace.sessionId !== input.sessionId) {
       setPasteError(
-        `sessionId 不一致: 期待 "${input.sessionId}" / 受信 "${result.trace.sessionId}"`
+        `sessionId mismatch: expected "${input.sessionId}", received "${result.trace.sessionId}"`
       );
       return;
     }
