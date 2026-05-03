@@ -10,6 +10,7 @@
 [![Foundry](https://img.shields.io/badge/contracts-foundry-2eb6ad)](https://getfoundry.sh)
 
 [**▶ Live demo**](https://gr-dius-web3-frontend.vercel.app/) ·
+[**Deployed iNFT (0G Galileo)**](https://chainscan-galileo.0g.ai/token/0xcb74b0e49db3968b4e8ceb70efaaa6bb668346d7) ·
 [**Pitch deck**](./pitch_deck.md) ·
 [**Agent runbook**](./AGENT.md) ·
 [**Sponsor prizes**](./docs/prizes/)
@@ -129,7 +130,8 @@ Signing always goes through Foundry's CLI flags — keystore (`ACCOUNT=...`), Le
 | What to verify | Where |
 |---|---|
 | Live demo (~60 s) | https://gr-dius-web3-frontend.vercel.app/ |
-| iNFT (ERC-721, deterministic `tokenId`) on 0G Galileo (16602) | [`contracts/src/AgentForgeINFT.sol`](./contracts/src/AgentForgeINFT.sol), [`web3/zerog-mint.ts`](./packages/frontend/src/web3/zerog-mint.ts) |
+| **Deployed iNFT contract** on 0G Galileo (chain 16602) | [`0xcB74b0E49dB3968b4e8cEB70EFAaA6bb668346D7`](https://chainscan-galileo.0g.ai/token/0xcb74b0e49db3968b4e8ceb70efaaa6bb668346d7) (live, ERC-721 with deterministic `tokenId`) |
+| iNFT contract source + mint client | [`contracts/src/AgentForgeINFT.sol`](./contracts/src/AgentForgeINFT.sol), [`web3/zerog-mint.ts`](./packages/frontend/src/web3/zerog-mint.ts) |
 | 0G Storage real put + sha256 fallback | [`web3/zerog-storage.ts`](./packages/frontend/src/web3/zerog-storage.ts) |
 | ENS Sepolia subname (NameWrapper + Resolver, text records) | [`web3/ens-register.ts`](./packages/frontend/src/web3/ens-register.ts) |
 | Uniswap v3 Sepolia first trade (WETH→USDC, 0.0001 ETH cap) | [`web3/uniswap-swap.ts`](./packages/frontend/src/web3/uniswap-swap.ts) |
